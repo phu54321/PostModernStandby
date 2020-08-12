@@ -68,6 +68,12 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
         return 2;
     }
 
+    auto mutex = CreateMutex(nullptr, TRUE, "Global\\delaySleepOnLidClose");
+    if (!mutex || GetLastError()) {
+        MessageBox(nullptr, TEXT("Another instance already running."), TEXT("Error"), MB_OK);
+        return 0;
+    }
+
     WNDCLASS wndClass;
     memset(&wndClass, 0, sizeof(WNDCLASS));
     wndClass.hInstance = hInstance;
