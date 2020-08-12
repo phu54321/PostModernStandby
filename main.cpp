@@ -45,7 +45,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT_PTR nIDEvent, DWORD dwTime) {
                 logA("Battery detached while lid closed. Waiting 60 seconds.");
                 sleepT = currentTime() + 60;
             }
-            if (sleepT <= currentTime()) {
+            if (sleepT && sleepT <= currentTime()) {
                 logA("Going to sleep...");
                 SetSuspendState(FALSE, TRUE, FALSE);
             }
