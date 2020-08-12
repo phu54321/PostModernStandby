@@ -1,16 +1,10 @@
 #include <windows.h>
 #include <powrprof.h>
-#include <cstdio>
+#include "debugLog.h"
+#include "accessToken.h"
 
 bool isBattery = false;
 bool isLidClosed = false;
-
-inline void logA(const char *format, ...) {
-    char buf[1024];
-    wvsprintfA(buf, format, ((char *) &format) + sizeof(void *));
-    OutputDebugStringA(buf);
-    puts(buf);
-}
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     if (msg == WM_POWERBROADCAST) {
@@ -18,13 +12,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             auto settings = reinterpret_cast<POWERBROADCAST_SETTING *>(lParam);
             auto powerSetting = settings->PowerSetting;
             auto dataLength = settings->DataLength;
-            auto data = settings->Data;
             if (dataLength == 0);
             else if (powerSetting == GUID_ACDC_POWER_SOURCE) {
-                isBattery = (data[0] == 1);
+                isBattery = (settings->Data[0] == 1);
                 logA("isBattery = %d", isBattery);
             } else if (powerSetting == GUID_LIDSWITCH_STATE_CHANGE) {
-                isLidClosed = (data[0] == 0);
+                isLidClosed = (settings->Data[0] == 0);
                 logA("isLidClosed = %d", isLidClosed);
             }
         }
@@ -43,8 +36,8 @@ void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT_PTR nIDEvent, DWORD dwTime) {
 
     if (isLidClosed) {
         if (!prevIsLidClosed) {
-            if (isBattery) {
-                logA("Lid close detected. Waiting for 30 seconds.");
+            if (isBattery && !sleepT) {
+                logA("Lid close detected while on battery. Waiting for 30 seconds.");
                 sleepT = currentTime() + 30;
             }
         } else {
@@ -67,7 +60,14 @@ void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT_PTR nIDEvent, DWORD dwTime) {
     prevIsLidClosed = isLidClosed;
 }
 
+bool checkSuspendPermission();
+
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow) {
+    if (!EnableNTPrivilege(SE_SHUTDOWN_NAME, SE_PRIVILEGE_ENABLED)) {
+        MessageBox(nullptr, TEXT("No suspend permission."), TEXT("Error"), MB_OK);
+        return 2;
+    }
+
     WNDCLASS wndClass;
     memset(&wndClass, 0, sizeof(WNDCLASS));
     wndClass.hInstance = hInstance;
@@ -94,11 +94,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
         return 1;
     }
 
-    // TODO: check for SetSuspendState privilege.
-
     RegisterPowerSettingNotification(hWnd, &GUID_ACDC_POWER_SOURCE, 0);
     RegisterPowerSettingNotification(hWnd, &GUID_LIDSWITCH_STATE_CHANGE, 0);
-    SetTimer(hWnd, 1, 1000, TimerProc);
+    SetTimer(hWnd, 1, 500, TimerProc);
 
     BOOL bRet;
     MSG msg = {};
