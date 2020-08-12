@@ -1,6 +1,7 @@
-#include <stdio.h>
+#include <windows.h>
 
-int main() {
-  printf("Hello World!");
-  return 0;
+INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+    PSTR lpCmdLine, INT nCmdShow)
+{
+    return 0;
 }
