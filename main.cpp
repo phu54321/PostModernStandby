@@ -89,16 +89,16 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
                 logA("Lid close detected. Waiting for 30 seconds.");
                 sleepT = currentTime();
             }
-            if (sleepT && sleepT + 90 <= currentTime())
+            if (sleepT && sleepT + 30 <= currentTime())
             {
                 logA("Going to sleep... [2]");
                 SetSuspendState(FALSE, TRUE, FALSE);
             }
-            else if (sleepT && sleepT + 30 <= currentTime())
-            {
-                logA("Going to sleep...");
-                SendMessage(HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, 2); // For S0ix supporting laptops.
-            }
+            // else if (sleepT && sleepT + 30 <= currentTime())
+            // {
+            //     logA("Going to sleep...");
+            //     SendMessage(HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, 2); // For S0ix supporting laptops.
+            // }
         }
         else
         {
