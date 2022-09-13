@@ -3,6 +3,7 @@
 #include "debugLog.h"
 
 static bool _isLidClosed = false;
+static bool _isBattery = false;
 
 bool ProcessLidCloseEvent(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -15,6 +16,10 @@ bool ProcessLidCloseEvent(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
       auto dataLength = settings->DataLength;
       if (dataLength == 0)
         ;
+      else if (powerSetting == GUID_ACDC_POWER_SOURCE) {
+          _isBattery = (settings->Data[0] == 1);
+          logA("isBattery = %d", _isBattery);
+      }
       else if (powerSetting == GUID_LIDSWITCH_STATE_CHANGE)
       {
         _isLidClosed = (settings->Data[0] == 0);
@@ -27,7 +32,11 @@ bool ProcessLidCloseEvent(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 bool isLidClosed() {
-  return _isLidClosed;
+    return _isLidClosed;
+}
+
+bool isBattery() {
+    return _isBattery;
 }
 
 void registerPowerNotificationReceiver(HWND hWnd)

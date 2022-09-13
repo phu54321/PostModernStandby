@@ -21,15 +21,13 @@
 
 void addTrayIcon(HINSTANCE hInstance, HWND hWnd) {
     NOTIFYICONDATA  nid;
-    TCHAR atcModuleName[_MAX_PATH];
-
     nid.cbSize = sizeof(nid);
     nid.hWnd = hWnd;
-    nid.uID = TRAY_ICON_ID;  // ¾ÆÀÌÄÜ ID
-    nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP; // ÇÃ·¡±× ¼³Á¤
-    nid.uCallbackMessage = TRAY_NOTIFY; // ÄÝ¹é¸Þ½ÃÁö ¼³Á¤
-    nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON)); // ¾ÆÀÌÄÜ ·Îµå  
-    strcpy(nid.szTip, "delaySleepOnLidClose");
+    nid.uID = TRAY_ICON_ID;  // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ID
+    nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP; // ï¿½Ã·ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+    nid.uCallbackMessage = TRAY_NOTIFY; // ï¿½Ý¹ï¿½Þ½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+    nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON)); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Îµï¿½  
+    strncpy(nid.szTip, "delaySleepOnLidClose", 128);
     Shell_NotifyIcon(NIM_ADD, &nid);
 }
 
@@ -40,7 +38,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         return TRUE;
 
     if (msg == TRAY_NOTIFY) {
-        if (wParam == TRAY_ICON_ID && lParam == WM_RBUTTONUP) {//µî·Ï½Ã ¼³Á¤ÇÑ Æ®·¹ÀÌ ¾ÆÀÌÄÜ ½Äº°ÀÚ
+        if (wParam == TRAY_ICON_ID && lParam == WM_RBUTTONUP) {//ï¿½ï¿½Ï½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Æ®ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Äºï¿½ï¿½ï¿½
             auto hMenu = CreateMenu();
             auto hMenubar = CreateMenu();
             AppendMenu(hMenu, MF_STRING, MENU_PREF_EDIT_MESSAGE, TEXT("Edit preference"));
@@ -93,9 +91,11 @@ BOOL shouldSleep(const pref& pref)
         if (checkKeepAliveApps(pref)) return false;
 
         // check clamshell mode
-        auto currentMonitor = getMonitorNameIfOnlyOne();
-        if (!currentMonitor.empty() && currentMonitor != pref.main_monitor_name) return false;
-
+        if (!isBattery()) {
+            auto currentMonitor = getMonitorNameIfOnlyOne();
+            if (!currentMonitor.empty() && currentMonitor != pref.main_monitor_name) return false;
+        }
+            
         return true;
     }
     return false;
