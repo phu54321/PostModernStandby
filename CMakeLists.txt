@@ -9,6 +9,7 @@ add_executable(delaySleepOnLidClose WIN32
 	lidClose.cpp
 	preference.cpp
 	preference.h
+	getMonitorName.cpp
 )
 
 TARGET_LINK_LIBRARIES(delaySleepOnLidClose powrprof)

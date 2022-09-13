@@ -9,6 +9,8 @@
 #include "debugLog.h"
 #include "accessToken.h"
 #include "preference.h"
+#include "getMonitorName.h"
+
 
 ULONGLONG currentTime()
 {
@@ -74,8 +76,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
     MSG msg = {};
     ULONGLONG sleepT = 0;
     auto pref = load_pref();
+    if (pref.main_monitor_name == "") {
+        auto currentMonitor = getMonitorNameIfOnlyOne();
+        if (!currentMonitor.empty()) pref.main_monitor_name = currentMonitor;
+    }
     save_pref(pref);
-    MessageBoxA(NULL, getPrefFilePath().c_str(), "path", MB_OK);
 
     while (msg.message != WM_QUIT)
     {

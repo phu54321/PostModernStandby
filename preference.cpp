@@ -8,6 +8,7 @@
 #include "preference.h"
 #include "json.hpp"
 #include "debugLog.h"
+#include "getMonitorName.h"
 
 #pragma comment(lib,"shlwapi.lib")
 
@@ -43,6 +44,8 @@ static pref getDefaultPref() {
 		"caffeine.exe",
 		"caffeine64.exe"
 	};
+	p.main_monitor_name = getMonitorNameIfOnlyOne();
+
 	return p;
 }
 
@@ -64,6 +67,7 @@ pref load_pref() {
 		json data = json::parse(ifs);
 		json_get_pref_optional(try_s0ix_sleep_first);
 		json_get_pref_optional(sleep_preventing_apps);
+		json_get_pref_optional(main_monitor_name);
 		logA("Loaded preference: %s", dump_pref(pref).dump(2).c_str());
 		return pref;
 	}
@@ -77,6 +81,7 @@ json dump_pref(const pref& props) {
 	return json{
 		{ "try_s0ix_sleep_first", props.try_s0ix_sleep_first },
 		{ "sleep_preventing_apps", props.sleep_preventing_apps },
+		{ "main_monitor_name", props.main_monitor_name },
 	};
 }
 
