@@ -8,6 +8,7 @@
 #include "keepAliveApp.hpp"
 #include "debugLog.h"
 #include "accessToken.h"
+#include "preference.h"
 
 ULONGLONG currentTime()
 {
@@ -72,6 +73,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
 
     MSG msg = {};
     ULONGLONG sleepT = 0;
+    auto pref = load_pref();
+    save_pref(pref);
+    MessageBoxA(NULL, getPrefFilePath().c_str(), "path", MB_OK);
 
     while (msg.message != WM_QUIT)
     {
@@ -81,7 +85,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
             DispatchMessage(&msg);
         }
 
-        logA("[Debug] TimerProc callback");
+        // logA("[Debug] TimerProc callback");
         if (shouldSleep())
         {
             if (!sleepT)
@@ -89,16 +93,20 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
                 logA("Lid close detected. Waiting for 30 seconds.");
                 sleepT = currentTime();
             }
-            if (sleepT && sleepT + 30 <= currentTime())
+
+            auto suspendSleepTimer = pref.try_s0ix_sleep_first ? 90 : 30;
+            auto s0ixSleepTimer = 30;
+
+            if (sleepT && sleepT + suspendSleepTimer <= currentTime())
             {
                 logA("Going to sleep... [2]");
                 SetSuspendState(FALSE, TRUE, FALSE);
             }
-            // else if (sleepT && sleepT + 30 <= currentTime())
-            // {
-            //     logA("Going to sleep...");
-            //     SendMessage(HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, 2); // For S0ix supporting laptops.
-            // }
+             else if (pref.try_s0ix_sleep_first && sleepT && sleepT + 30 <= currentTime())
+             {
+                 logA("Going to sleep...");
+                 SendMessage(HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, 2); // For S0ix supporting laptops.
+             }
         }
         else
         {
