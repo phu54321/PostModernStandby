@@ -19,7 +19,16 @@ ULONGLONG currentTime()
 
 BOOL shouldSleep(const pref& pref)
 {
-    return isLidClosed() && !checkKeepAliveApps(pref);
+    if (isLidClosed()) {
+        if (checkKeepAliveApps(pref)) return false;
+
+        // check clamshell mode
+        auto currentMonitor = getMonitorNameIfOnlyOne();
+        if (!currentMonitor.empty() && currentMonitor != pref.main_monitor_name) return false;
+
+        return true;
+    }
+    return false;
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
