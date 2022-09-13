@@ -39,6 +39,10 @@ std::string getPrefFilePath() {
 static pref getDefaultPref() {
 	pref p = { 0 };
 	p.try_s0ix_sleep_first = false;
+	p.sleep_preventing_apps = {
+		"caffeine.exe",
+		"caffeine64.exe"
+	};
 	return p;
 }
 
@@ -59,6 +63,7 @@ pref load_pref() {
 	try {
 		json data = json::parse(ifs);
 		json_get_pref_optional(try_s0ix_sleep_first);
+		json_get_pref_optional(sleep_preventing_apps);
 		logA("Loaded preference: %s", dump_pref(pref).dump(2).c_str());
 		return pref;
 	}
@@ -69,8 +74,9 @@ pref load_pref() {
 }
 
 json dump_pref(const pref& props) {
-	return json {
-		{ "try_s0ix_sleep_first", props.try_s0ix_sleep_first }
+	return json{
+		{ "try_s0ix_sleep_first", props.try_s0ix_sleep_first },
+		{ "sleep_preventing_apps", props.sleep_preventing_apps },
 	};
 }
 

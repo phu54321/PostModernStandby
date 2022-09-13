@@ -15,9 +15,9 @@ ULONGLONG currentTime()
     return GetTickCount64() / 1000;
 }
 
-BOOL shouldSleep()
+BOOL shouldSleep(const pref& pref)
 {
-    return isLidClosed() && !checkKeepAliveApps();
+    return isLidClosed() && !checkKeepAliveApps(pref);
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -86,7 +86,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
         }
 
         // logA("[Debug] TimerProc callback");
-        if (shouldSleep())
+        if (shouldSleep(pref))
         {
             if (!sleepT)
             {

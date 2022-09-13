@@ -1,13 +1,15 @@
 #pragma once
 
 #include <memory>
+#include <set>
 #include <string>
-#include "json.hpp"
+#include "json_fwd.hpp"
 
 using nlohmann::json;
 
 struct pref {
 	bool try_s0ix_sleep_first = false;
+	std::set<std::string> sleep_preventing_apps;
 };
 
 std::string getPrefFilePath();

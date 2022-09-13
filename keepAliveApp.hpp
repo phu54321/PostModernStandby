@@ -1,3 +1,5 @@
 #pragma once
 
-bool checkKeepAliveApps();
+#include "preference.h"
+
+bool checkKeepAliveApps(const pref& pref);
