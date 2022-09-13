@@ -37,8 +37,8 @@ std::string getPrefFilePath() {
 	return prefFilePath;
 }
 
-static pref getDefaultPref() {
-	pref p = { 0 };
+static preference getDefaultPref() {
+	preference p = { 0 };
 	p.try_s0ix_sleep_first = false;
 	p.sleep_preventing_apps = {
 		"caffeine.exe",
@@ -50,7 +50,7 @@ static pref getDefaultPref() {
 }
 
 
-pref load_pref() {
+preference load_pref() {
 	std::ifstream ifs(getPrefFilePath());
 	auto pref = getDefaultPref();
 	if (ifs.fail()) return pref;
@@ -77,7 +77,7 @@ pref load_pref() {
 	}
 }
 
-json dump_pref(const pref& props) {
+json dump_pref(const preference& props) {
 	return json{
 		{ "try_s0ix_sleep_first", props.try_s0ix_sleep_first },
 		{ "sleep_preventing_apps", props.sleep_preventing_apps },
@@ -85,7 +85,7 @@ json dump_pref(const pref& props) {
 	};
 }
 
-void save_pref(const pref& props) {
+void save_pref(const preference& props) {
 	std::ofstream ofs(getPrefFilePath());
 	ofs << dump_pref(props).dump(2);
 }

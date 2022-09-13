@@ -19,7 +19,7 @@ static std::string to_utf8(const std::wstring& wide_string)
 
 //
 
-bool checkKeepAliveApps(const pref& pref)
+bool checkKeepAliveApps(const preference& pref)
 {
     HANDLE hSnapShot;
     PROCESSENTRY32W pEntry;

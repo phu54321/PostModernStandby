@@ -17,16 +17,18 @@
 #define TRAY_NOTIFY (WM_APP + 100)
 #define MENU_QUIT_MESSAGE 0x101
 #define MENU_PREF_EDIT_MESSAGE 0x102
+#define MENU_PREF_RELOAD_MESSAGE 0x103
 
+preference pref = load_pref();
 
 void addTrayIcon(HINSTANCE hInstance, HWND hWnd) {
     NOTIFYICONDATA  nid;
     nid.cbSize = sizeof(nid);
     nid.hWnd = hWnd;
-    nid.uID = TRAY_ICON_ID;  // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ID
-    nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP; // ï¿½Ã·ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
-    nid.uCallbackMessage = TRAY_NOTIFY; // ï¿½Ý¹ï¿½Þ½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
-    nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON)); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Îµï¿½  
+    nid.uID = TRAY_ICON_ID;  // ¾ÆÀÌÄÜ ID
+    nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP; // ÇÃ·¡±× ¼³Á¤
+    nid.uCallbackMessage = TRAY_NOTIFY; // ÄÝ¹é¸Þ½ÃÁö ¼³Á¤
+    nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON)); // ¾ÆÀÌÄÜ ·Îµå  
     strncpy(nid.szTip, "delaySleepOnLidClose", 128);
     Shell_NotifyIcon(NIM_ADD, &nid);
 }
@@ -38,10 +40,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         return TRUE;
 
     if (msg == TRAY_NOTIFY) {
-        if (wParam == TRAY_ICON_ID && lParam == WM_RBUTTONUP) {//ï¿½ï¿½Ï½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Æ®ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Äºï¿½ï¿½ï¿½
+        if (wParam == TRAY_ICON_ID && lParam == WM_RBUTTONUP) {//µî·Ï½Ã ¼³Á¤ÇÑ Æ®·¹ÀÌ ¾ÆÀÌÄÜ ½Äº°ÀÚ
             auto hMenu = CreateMenu();
             auto hMenubar = CreateMenu();
             AppendMenu(hMenu, MF_STRING, MENU_PREF_EDIT_MESSAGE, TEXT("Edit preference"));
+            AppendMenu(hMenu, MF_STRING, MENU_PREF_RELOAD_MESSAGE, TEXT("Reload preference"));
             AppendMenu(hMenu, MF_STRING, MENU_QUIT_MESSAGE, TEXT("Quit"));
             AppendMenu(hMenubar, MF_POPUP, (UINT_PTR)hMenu, TEXT("Menu"));
 
@@ -72,6 +75,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             ShellExecute(hWnd, NULL, getPrefFilePath().c_str(), NULL, NULL, SW_SHOWNORMAL);
             return 0;
         }
+
+        if (wmId == MENU_PREF_RELOAD_MESSAGE) {
+            pref = load_pref();
+            return 0;
+        }
     }
 
     return DefWindowProc(hWnd, msg, wParam, lParam);
@@ -85,7 +93,7 @@ ULONGLONG currentTime()
     return GetTickCount64() / 1000;
 }
 
-BOOL shouldSleep(const pref& pref)
+BOOL shouldSleep(const preference& pref)
 {
     if (isLidClosed()) {
         if (checkKeepAliveApps(pref)) return false;
@@ -150,7 +158,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
 
     MSG msg = {};
     ULONGLONG sleepT = 0;
-    auto pref = load_pref();
+    pref = load_pref();
     if (pref.main_monitor_name == "") {
         auto currentMonitor = getMonitorNameIfOnlyOne();
         if (!currentMonitor.empty()) pref.main_monitor_name = currentMonitor;

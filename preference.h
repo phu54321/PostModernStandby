@@ -7,13 +7,13 @@
 
 using nlohmann::json;
 
-struct pref {
+struct preference {
 	bool try_s0ix_sleep_first = false;
 	std::set<std::string> sleep_preventing_apps;
 	std::string main_monitor_name = "";
 };
 
 std::string getPrefFilePath();
-pref load_pref();
-json dump_pref(const pref& props);
-void save_pref(const pref& props);
+preference load_pref();
+json dump_pref(const preference& props);
+void save_pref(const preference& props);
