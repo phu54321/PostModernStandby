@@ -10,6 +10,76 @@
 #include "accessToken.h"
 #include "preference.h"
 #include "getMonitorName.h"
+#include "resource.h"
+
+
+#define TRAY_ICON_ID 12567
+#define TRAY_NOTIFY (WM_APP + 100)
+#define MENU_QUIT_MESSAGE 0x101
+#define MENU_PREF_EDIT_MESSAGE 0x102
+
+
+void addTrayIcon(HINSTANCE hInstance, HWND hWnd) {
+    NOTIFYICONDATA  nid;
+    TCHAR atcModuleName[_MAX_PATH];
+
+    nid.cbSize = sizeof(nid);
+    nid.hWnd = hWnd;
+    nid.uID = TRAY_ICON_ID;  // 아이콘 ID
+    nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP; // 플래그 설정
+    nid.uCallbackMessage = TRAY_NOTIFY; // 콜백메시지 설정
+    nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON)); // 아이콘 로드  
+    strcpy(nid.szTip, "delaySleepOnLidClose");
+    Shell_NotifyIcon(NIM_ADD, &nid);
+}
+
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    if (ProcessLidCloseEvent(hWnd, msg, wParam, lParam))
+        return TRUE;
+
+    if (msg == TRAY_NOTIFY) {
+        if (wParam == TRAY_ICON_ID && lParam == WM_RBUTTONUP) {//등록시 설정한 트레이 아이콘 식별자
+            auto hMenu = CreateMenu();
+            auto hMenubar = CreateMenu();
+            AppendMenu(hMenu, MF_STRING, MENU_PREF_EDIT_MESSAGE, TEXT("Edit preference"));
+            AppendMenu(hMenu, MF_STRING, MENU_QUIT_MESSAGE, TEXT("Quit"));
+            AppendMenu(hMenubar, MF_POPUP, (UINT_PTR)hMenu, TEXT("Menu"));
+
+            auto hPopupMenu = GetSubMenu(hMenubar, 0);
+            POINT pt;
+            GetCursorPos(&pt);
+            SetForegroundWindow(hWnd);
+            TrackPopupMenu(hPopupMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON, pt.x, pt.y, 0, hWnd, NULL);
+            SetForegroundWindow(hWnd);
+            PostMessage(hWnd, WM_NULL, 0, 0);
+
+            DestroyMenu(hMenu);
+            DestroyMenu(hMenubar);
+
+            return 0;
+        }
+    }
+    else if (msg == WM_COMMAND) {
+        auto wmId = LOWORD(wParam); 
+        auto wmEvent = HIWORD(wParam);
+        
+        if (wmId == MENU_QUIT_MESSAGE) {
+            PostQuitMessage(0);
+            return 0;
+        }
+
+        if (wmId == MENU_PREF_EDIT_MESSAGE) {
+            ShellExecute(hWnd, NULL, getPrefFilePath().c_str(), NULL, NULL, SW_SHOWNORMAL);
+            return 0;
+        }
+    }
+
+    return DefWindowProc(hWnd, msg, wParam, lParam);
+}
+
+///
 
 
 ULONGLONG currentTime()
@@ -31,12 +101,7 @@ BOOL shouldSleep(const pref& pref)
     return false;
 }
 
-LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-    if (ProcessLidCloseEvent(hWnd, msg, wParam, lParam))
-        return TRUE;
-    return DefWindowProc(hWnd, msg, wParam, lParam);
-}
+///
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow)
 {
@@ -81,6 +146,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
     }
 
     registerPowerNotificationReceiver(hWnd);
+    addTrayIcon(hInstance, hWnd);
 
     MSG msg = {};
     ULONGLONG sleepT = 0;
@@ -91,10 +157,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
     }
     save_pref(pref);
 
-    while (msg.message != WM_QUIT)
+    while (1)
     {
         while (PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE))
-        {
+        {   
+            if (msg.message == WM_QUIT) return 0;
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }

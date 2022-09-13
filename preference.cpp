@@ -72,7 +72,7 @@ pref load_pref() {
 		return pref;
 	}
 	catch (json::exception e) {
-		MessageBoxA(nullptr, e.what(), "delayLidCloseSleep: preference parse error", MB_OK);
+		MessageBoxA(nullptr, e.what(), "delaySleepOnLidClose: preference parse error", MB_OK);
 		return getDefaultPref();
 	}
 }
