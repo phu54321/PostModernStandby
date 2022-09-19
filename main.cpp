@@ -19,6 +19,9 @@
 #define MENU_PREF_EDIT_MESSAGE 0x102
 #define MENU_PREF_RELOAD_MESSAGE 0x103
 
+#define ID_MAIN_TIMER 0x301
+
+
 preference pref = load_pref();
 
 void addTrayIcon(HINSTANCE hInstance, HWND hWnd) {
@@ -31,6 +34,27 @@ void addTrayIcon(HINSTANCE hInstance, HWND hWnd) {
     nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON)); // 아이콘 로드  
     strncpy(nid.szTip, "delaySleepOnLidClose", 128);
     Shell_NotifyIcon(NIM_ADD, &nid);
+}
+
+ULONGLONG currentTime()
+{
+    return GetTickCount64() / 1000;
+}
+
+BOOL shouldSleep(const preference& pref)
+{
+    if (isLidClosed()) {
+        if (checkKeepAliveApps(pref)) return false;
+
+        // check clamshell mode
+        if (!isBattery()) {
+            auto currentMonitor = getMonitorNameIfOnlyOne();
+            if (!currentMonitor.empty() && currentMonitor != pref.main_monitor_name) return false;
+        }
+
+        return true;
+    }
+    return false;
 }
 
 
@@ -62,10 +86,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             return 0;
         }
     }
+
     else if (msg == WM_COMMAND) {
-        auto wmId = LOWORD(wParam); 
+        auto wmId = LOWORD(wParam);
         auto wmEvent = HIWORD(wParam);
-        
+
         if (wmId == MENU_QUIT_MESSAGE) {
             PostQuitMessage(0);
             return 0;
@@ -82,34 +107,53 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         }
     }
 
+    else if (msg == WM_TIMER) {
+        if (wParam == ID_MAIN_TIMER) {
+            static ULONGLONG sleepT = 0;
+
+            logA("[Debug] TimerProc callback");
+
+            if (shouldSleep(pref))
+            {
+                if (!sleepT)
+                {
+                    logA("Lid close detected. Waiting for 30 seconds.");
+                    sleepT = currentTime();
+                }
+
+                auto suspendSleepTimer = pref.try_s0ix_sleep_first ? 90 : 30;
+                auto s0ixSleepTimer = 30;
+
+                if (sleepT && sleepT + suspendSleepTimer <= currentTime())
+                {
+                    logA("Going to sleep... [2]");
+                    SetSuspendState(FALSE, TRUE, FALSE);
+                }
+                else if (pref.try_s0ix_sleep_first && sleepT && sleepT + 30 <= currentTime())
+                {
+                    logA("Going to sleep...");
+                    SendMessage(HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, 2); // For S0ix supporting laptops.
+                }
+            }
+            else
+            {
+                if (sleepT)
+                {
+                    logA("Lid re-opened. Interrupting timer.");
+                    sleepT = 0;
+                }
+            }
+
+            return 0;
+        }
+    }
+
     return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
 ///
 
 
-ULONGLONG currentTime()
-{
-    return GetTickCount64() / 1000;
-}
-
-BOOL shouldSleep(const preference& pref)
-{
-    if (isLidClosed()) {
-        if (checkKeepAliveApps(pref)) return false;
-
-        // check clamshell mode
-        if (!isBattery()) {
-            auto currentMonitor = getMonitorNameIfOnlyOne();
-            if (!currentMonitor.empty() && currentMonitor != pref.main_monitor_name) return false;
-        }
-            
-        return true;
-    }
-    return false;
-}
-
-///
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow)
 {
@@ -157,7 +201,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
     addTrayIcon(hInstance, hWnd);
 
     MSG msg = {};
-    ULONGLONG sleepT = 0;
     pref = load_pref();
     if (pref.main_monitor_name == "") {
         auto currentMonitor = getMonitorNameIfOnlyOne();
@@ -165,48 +208,12 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
     }
     save_pref(pref);
 
-    while (1)
+    SetTimer(hWnd, ID_MAIN_TIMER, 5000, NULL);
+
+    while (GetMessage(&msg, hWnd, 0, 0))
     {
-        while (PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE))
-        {   
-            if (msg.message == WM_QUIT) return 0;
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
-
-        // logA("[Debug] TimerProc callback");
-        if (shouldSleep(pref))
-        {
-            if (!sleepT)
-            {
-                logA("Lid close detected. Waiting for 30 seconds.");
-                sleepT = currentTime();
-            }
-
-            auto suspendSleepTimer = pref.try_s0ix_sleep_first ? 90 : 30;
-            auto s0ixSleepTimer = 30;
-
-            if (sleepT && sleepT + suspendSleepTimer <= currentTime())
-            {
-                logA("Going to sleep... [2]");
-                SetSuspendState(FALSE, TRUE, FALSE);
-            }
-             else if (pref.try_s0ix_sleep_first && sleepT && sleepT + 30 <= currentTime())
-             {
-                 logA("Going to sleep...");
-                 SendMessage(HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, 2); // For S0ix supporting laptops.
-             }
-        }
-        else
-        {
-            if (sleepT)
-            {
-                logA("Lid re-opened. Interrupting timer.");
-                sleepT = 0;
-            }
-        }
-
-        Sleep(1000);
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
     }
     return 0;
 }
