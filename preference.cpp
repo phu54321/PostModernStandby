@@ -10,60 +10,67 @@
 #include "debugLog.h"
 #include "getMonitorName.h"
 
-#pragma comment(lib,"shlwapi.lib")
+#pragma comment(lib, "shlwapi.lib")
 
-static std::string getPrefFolder() {
+static tstring getPrefFolder()
+{
 	TCHAR szPath[MAX_PATH];
 	if (SHGetFolderPath(NULL, CSIDL_COMMON_APPDATA, NULL, 0, szPath) == 0)
 	{
 		PathAppend(szPath, TEXT("\\trgksoft\\delaySleepOnLidClose\\"));
 		return szPath;
 	}
-	else {
+	else
+	{
 		throw new std::runtime_error("Cannot get preference folder");
 	}
 }
 
-std::string getPrefFilePath() {
+tstring getPrefFilePath()
+{
 	auto prefFolder = getPrefFolder();
 	{
 		auto ret = SHCreateDirectoryEx(NULL, prefFolder.c_str(), NULL);
-		if (ret != 0 && ret != ERROR_ALREADY_EXISTS) {
+		if (ret != 0 && ret != ERROR_ALREADY_EXISTS)
+		{
 			throw new std::runtime_error("Cannot create preference folder.");
 		}
 	}
 
-	auto prefFilePath = prefFolder + "preference.json";
+	auto prefFilePath = prefFolder + TEXT("preference.json");
 	return prefFilePath;
 }
 
-static preference getDefaultPref() {
-	preference p = { 0 };
+static preference getDefaultPref()
+{
+	preference p = {0};
 	p.try_s0ix_sleep_first = false;
 	p.sleep_preventing_apps = {
-		"caffeine.exe",
-		"caffeine64.exe"
-	};
+			"caffeine.exe",
+			"caffeine64.exe"};
 	p.main_monitor_name = getMonitorNameIfOnlyOne();
 
 	return p;
 }
 
-
-preference load_pref() {
+preference load_pref()
+{
 	std::ifstream ifs(getPrefFilePath());
 	auto pref = getDefaultPref();
-	if (ifs.fail()) return pref;
+	if (ifs.fail())
+		return pref;
 
 #define json_get_pref_required(pref_name) \
-	pref.pref_name = data[#pref_name];  /* Error if no such pref */
+	pref.pref_name = data[#pref_name]; /* Error if no such pref */
 
 #define json_get_pref_optional(pref_name) \
-	if (data.contains(#pref_name)) { /* Ignore if no such pref */ \
-		pref.pref_name = data[#pref_name]; \
+	if (data.contains(#pref_name))          \
+	{ /* Ignore if no such pref */          \
+		pref.pref_name = data[#pref_name];    \
 	}
 
-	try {
+	try
+	{
 		json data = json::parse(ifs);
 		json_get_pref_optional(try_s0ix_sleep_first);
 		json_get_pref_optional(sleep_preventing_apps);
@@ -71,21 +78,24 @@ preference load_pref() {
 		logA("Loaded preference: %s", dump_pref(pref).dump(2).c_str());
 		return pref;
 	}
-	catch (json::exception e) {
+	catch (json::exception e)
+	{
 		MessageBoxA(nullptr, e.what(), "delaySleepOnLidClose: preference parse error", MB_OK);
 		return getDefaultPref();
 	}
 }
 
-json dump_pref(const preference& props) {
+json dump_pref(const preference &props)
+{
 	return json{
-		{ "try_s0ix_sleep_first", props.try_s0ix_sleep_first },
-		{ "sleep_preventing_apps", props.sleep_preventing_apps },
-		{ "main_monitor_name", props.main_monitor_name },
+			{"try_s0ix_sleep_first", props.try_s0ix_sleep_first},
+			{"sleep_preventing_apps", props.sleep_preventing_apps},
+			{"main_monitor_name", props.main_monitor_name},
 	};
 }
 
-void save_pref(const preference& props) {
+void save_pref(const preference &props)
+{
 	std::ofstream ofs(getPrefFilePath());
 	ofs << dump_pref(props).dump(2);
 }

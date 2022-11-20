@@ -4,6 +4,8 @@
 #include <string>
 #include <algorithm>
 #include <set>
+#include <tchar.h>
+
 #include "lidClose.h"
 #include "keepAliveApp.hpp"
 #include "debugLog.h"
@@ -11,7 +13,6 @@
 #include "preference.h"
 #include "getMonitorName.h"
 #include "resource.h"
-
 
 #define TRAY_ICON_ID 12567
 #define TRAY_NOTIFY (WM_APP + 100)
@@ -21,18 +22,18 @@
 
 #define ID_MAIN_TIMER 0x301
 
-
 preference pref = load_pref();
 
-void addTrayIcon(HINSTANCE hInstance, HWND hWnd) {
-    NOTIFYICONDATA  nid;
+void addTrayIcon(HINSTANCE hInstance, HWND hWnd)
+{
+    NOTIFYICONDATA nid;
     nid.cbSize = sizeof(nid);
     nid.hWnd = hWnd;
-    nid.uID = TRAY_ICON_ID;  // 아이콘 ID
-    nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP; // 플래그 설정
-    nid.uCallbackMessage = TRAY_NOTIFY; // 콜백메시지 설정
-    nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON)); // 아이콘 로드  
-    strncpy(nid.szTip, "delaySleepOnLidClose", 128);
+    nid.uID = TRAY_ICON_ID;
+    nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+    nid.uCallbackMessage = TRAY_NOTIFY;
+    nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON));
+    _tcsncpy(nid.szTip, TEXT("delaySleepOnLidClose"), 128);
     Shell_NotifyIcon(NIM_ADD, &nid);
 }
 
@@ -41,15 +42,19 @@ ULONGLONG currentTime()
     return GetTickCount64() / 1000;
 }
 
-BOOL shouldSleep(const preference& pref)
+BOOL shouldSleep(const preference &pref)
 {
-    if (isLidClosed()) {
-        if (checkKeepAliveApps(pref)) return false;
+    if (isLidClosed())
+    {
+        if (checkKeepAliveApps(pref))
+            return false;
 
         // check clamshell mode
-        if (!isBattery()) {
+        if (!isBattery())
+        {
             auto currentMonitor = getMonitorNameIfOnlyOne();
-            if (!currentMonitor.empty() && currentMonitor != pref.main_monitor_name) return false;
+            if (!currentMonitor.empty() && currentMonitor != pref.main_monitor_name)
+                return false;
         }
 
         return true;
@@ -57,14 +62,15 @@ BOOL shouldSleep(const preference& pref)
     return false;
 }
 
-
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     if (ProcessLidCloseEvent(hWnd, msg, wParam, lParam))
         return TRUE;
 
-    if (msg == TRAY_NOTIFY) {
-        if (wParam == TRAY_ICON_ID && lParam == WM_RBUTTONUP) {//등록시 설정한 트레이 아이콘 식별자
+    if (msg == TRAY_NOTIFY)
+    {
+        if (wParam == TRAY_ICON_ID && lParam == WM_RBUTTONUP)
+        {
             auto hMenu = CreateMenu();
             auto hMenubar = CreateMenu();
             AppendMenu(hMenu, MF_STRING, MENU_PREF_EDIT_MESSAGE, TEXT("Edit preference"));
@@ -87,28 +93,34 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         }
     }
 
-    else if (msg == WM_COMMAND) {
+    else if (msg == WM_COMMAND)
+    {
         auto wmId = LOWORD(wParam);
         auto wmEvent = HIWORD(wParam);
 
-        if (wmId == MENU_QUIT_MESSAGE) {
+        if (wmId == MENU_QUIT_MESSAGE)
+        {
             PostQuitMessage(0);
             return 0;
         }
 
-        if (wmId == MENU_PREF_EDIT_MESSAGE) {
+        if (wmId == MENU_PREF_EDIT_MESSAGE)
+        {
             ShellExecute(hWnd, NULL, getPrefFilePath().c_str(), NULL, NULL, SW_SHOWNORMAL);
             return 0;
         }
 
-        if (wmId == MENU_PREF_RELOAD_MESSAGE) {
+        if (wmId == MENU_PREF_RELOAD_MESSAGE)
+        {
             pref = load_pref();
             return 0;
         }
     }
 
-    else if (msg == WM_TIMER) {
-        if (wParam == ID_MAIN_TIMER) {
+    else if (msg == WM_TIMER)
+    {
+        if (wParam == ID_MAIN_TIMER)
+        {
             static ULONGLONG sleepT = 0;
 
             logA("[Debug] TimerProc callback");
@@ -152,8 +164,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 ///
-
-
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow)
 {
@@ -202,9 +212,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
 
     MSG msg = {};
     pref = load_pref();
-    if (pref.main_monitor_name == "") {
+    if (pref.main_monitor_name == "")
+    {
         auto currentMonitor = getMonitorNameIfOnlyOne();
-        if (!currentMonitor.empty()) pref.main_monitor_name = currentMonitor;
+        if (!currentMonitor.empty())
+            pref.main_monitor_name = currentMonitor;
     }
     save_pref(pref);
 

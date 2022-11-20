@@ -1,19 +1,24 @@
 #pragma once
 
+#define WIN32_LEAN_AND_MEAN
+
 #include <memory>
 #include <set>
 #include <string>
+#include <windows.h>
 #include "json_fwd.hpp"
 
 using nlohmann::json;
+using tstring = std::basic_string<TCHAR>;
 
-struct preference {
+struct preference
+{
 	bool try_s0ix_sleep_first = false;
 	std::set<std::string> sleep_preventing_apps;
 	std::string main_monitor_name = "";
 };
 
-std::string getPrefFilePath();
+tstring getPrefFilePath();
 preference load_pref();
-json dump_pref(const preference& props);
-void save_pref(const preference& props);
+json dump_pref(const preference &props);
+void save_pref(const preference &props);
