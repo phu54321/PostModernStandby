@@ -12,7 +12,7 @@
 #include "accessToken.h"
 #include "preference.h"
 #include "getMonitorName.h"
-#include "resource.h"
+#include "res/resource.h"
 
 #define TRAY_ICON_ID 12567
 #define TRAY_NOTIFY (WM_APP + 100)

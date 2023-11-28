@@ -6,7 +6,7 @@
 #include <fstream>
 
 #include "preference.h"
-#include "json.hpp"
+#include "lib/json.hpp"
 #include "debugLog.h"
 #include "getMonitorName.h"
 

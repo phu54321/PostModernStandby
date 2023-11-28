@@ -6,7 +6,7 @@
 #include <set>
 #include <string>
 #include <windows.h>
-#include "json_fwd.hpp"
+#include "lib/json_fwd.hpp"
 
 using nlohmann::json;
 using tstring = std::basic_string<TCHAR>;

@@ -1,16 +1,16 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.5.0)
 project(delaySleepOnLidClose VERSION 0.1.0)
 
 add_executable(delaySleepOnLidClose WIN32
-	main.cpp
-	accessToken.cpp
-	debugLog.cpp
-	keepAliveApp.cpp
-	lidClose.cpp
-	preference.cpp
-	preference.h
-	getMonitorName.cpp
-	resource.rc
+		src/main.cpp
+		src/accessToken.cpp
+		src/debugLog.cpp
+		src/keepAliveApp.cpp
+		src/lidClose.cpp
+		src/preference.cpp
+		src/preference.h
+		src/getMonitorName.cpp
+		src/res/resource.rc
  )
 
 TARGET_LINK_LIBRARIES(delaySleepOnLidClose powrprof)
