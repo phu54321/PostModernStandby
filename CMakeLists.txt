@@ -11,6 +11,9 @@ add_executable(delaySleepOnLidClose WIN32
 		src/preference.h
 		src/getMonitorName.cpp
 		src/res/resource.rc
+
+		src/utils/volumeRAII.cpp
+		src/utils/WASAPIUtils.cpp
  )
 
-TARGET_LINK_LIBRARIES(delaySleepOnLidClose powrprof)
+TARGET_LINK_LIBRARIES(delaySleepOnLidClose powrprof winmm)

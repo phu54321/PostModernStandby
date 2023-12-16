@@ -14,6 +14,8 @@
 #include "getMonitorName.h"
 #include "res/resource.h"
 
+#include "utils/volumeRAII.h"
+
 #define TRAY_ICON_ID 12567
 #define TRAY_NOTIFY (WM_APP + 100)
 #define MENU_QUIT_MESSAGE 0x101
@@ -65,16 +67,18 @@ BOOL shouldSleep(const preference &pref) {
     return false;
 }
 
+std::unique_ptr<VolumeRAII> g_volumeRAII;
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     if (ProcessLidCloseEvent(hWnd, msg, wParam, lParam))
         return TRUE;
 
     if (msg == WM_CREATE) {
-        auto hInstance = (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
+        auto hInstance = (HINSTANCE) GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
         registerPowerNotificationReceiver(hWnd);
         addTrayIcon(hInstance, hWnd);
 
-        SetTimer(hWnd, ID_MAIN_TIMER, 5000, NULL);
+        SetTimer(hWnd, ID_MAIN_TIMER, 1000, NULL);
         return 0;
     } else if (msg == WM_DESTROY) {
         deleteTrayIcon(hWnd);
@@ -122,10 +126,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     } else if (msg == WM_TIMER) {
         if (wParam == ID_MAIN_TIMER) {
             static ULONGLONG sleepT = 0;
+            static ULONGLONG lidCloseAlertTimer = 0;
+            static ULONGLONG lidCloseAlertEndTimer = MAXLONGLONG;
 
             logA("[Debug] TimerProc callback");
 
-            if (shouldSleep(pref)) {
+            bool shouldSleepNow = shouldSleep(pref);
+            bool isLidClosedNow = isLidClosed();
+
+            if (shouldSleepNow) {
                 if (!sleepT) {
                     logA("Lid close detected. Waiting for 30 seconds.");
                     sleepT = currentTime();
@@ -148,6 +157,31 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 }
             }
 
+            //
+
+            if (isLidClosedNow) {
+                if (shouldSleepNow) {
+                    lidCloseAlertTimer = 0;
+                } else {
+                    if (lidCloseAlertTimer < currentTime()) {
+                        // play sound
+                        logA("Play sound");
+                        auto hInstance = (HINSTANCE) GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
+                        g_volumeRAII = std::make_unique<VolumeRAII>(0.8f);
+                        PlaySound(MAKEINTRESOURCE(IDR_ALERT), hInstance, SND_RESOURCE | SND_ASYNC);
+                        lidCloseAlertEndTimer = currentTime() + 3;
+                        lidCloseAlertTimer = currentTime() + 30 * 60;
+                    }
+                }
+            } else {
+                lidCloseAlertTimer = 0;
+            }
+
+            if (lidCloseAlertEndTimer < currentTime()) {
+                g_volumeRAII = nullptr;
+                lidCloseAlertEndTimer = MAXLONGLONG;
+            }
+
             return 0;
         }
     }
@@ -168,6 +202,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
         MessageBox(nullptr, TEXT("Another instance already running."), TEXT("Error"), MB_OK);
         return 0;
     }
+
+    CoInitialize(nullptr);
 
     WNDCLASS wndClass;
     memset(&wndClass, 0, sizeof(WNDCLASS));
