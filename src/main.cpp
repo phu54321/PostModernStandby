@@ -87,10 +87,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     } else if (msg == TRAY_NOTIFY) {
         if (wParam == TRAY_ICON_ID && lParam == WM_RBUTTONUP) {
             auto hMenu = CreateMenu();
-            auto hMenubar = CreateMenu();
             AppendMenu(hMenu, MF_STRING, MENU_PREF_EDIT_MESSAGE, TEXT("Edit preference"));
             AppendMenu(hMenu, MF_STRING, MENU_PREF_RELOAD_MESSAGE, TEXT("Reload preference"));
             AppendMenu(hMenu, MF_STRING, MENU_QUIT_MESSAGE, TEXT("Quit"));
+
+            auto hMenubar = CreateMenu();
             AppendMenu(hMenubar, MF_POPUP, (UINT_PTR) hMenu, TEXT("Menu"));
 
             auto hPopupMenu = GetSubMenu(hMenubar, 0);
@@ -168,7 +169,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                         // play sound
                         logA("Play sound");
                         auto hInstance = (HINSTANCE) GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
-                        g_volumeRAII = std::make_unique<VolumeRAII>(0.8f);
+                        g_volumeRAII = std::make_unique<VolumeRAII>(pref.lid_close_alert_volume / 100.0f);
                         PlaySound(MAKEINTRESOURCE(IDR_ALERT), hInstance, SND_RESOURCE | SND_ASYNC);
                         lidCloseAlertEndTimer = currentTime() + 3;
                         lidCloseAlertTimer = currentTime() + 30 * 60;
@@ -238,10 +239,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
         if (!currentMonitor.empty()) {
             pref.main_monitor_name = currentMonitor;
         }
-        save_pref(pref);
     }
+    save_pref(pref);
 
-    while (GetMessage(&msg, hWnd, 0, 0)) {
+    while (GetMessage(&msg, nullptr, 0, 0)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }

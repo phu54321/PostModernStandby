@@ -41,22 +41,19 @@ tstring getPrefFilePath()
 	return prefFilePath;
 }
 
-static preference getDefaultPref()
-{
-	preference p = {0};
-	p.try_s0ix_sleep_first = false;
-	p.sleep_preventing_apps = {
+preference::preference() {
+	try_s0ix_sleep_first = false;
+    lid_close_alert_volume = 100;
+	sleep_preventing_apps = {
 			"caffeine.exe",
 			"caffeine64.exe"};
-	p.main_monitor_name = getMonitorNameIfOnlyOne();
-
-	return p;
+	main_monitor_name = getMonitorNameIfOnlyOne();
 }
 
 preference load_pref()
 {
 	std::ifstream ifs(getPrefFilePath());
-	auto pref = getDefaultPref();
+	preference pref;
 	if (ifs.fail())
 		return pref;
 
@@ -74,6 +71,7 @@ preference load_pref()
 		json data = json::parse(ifs);
 		json_get_pref_optional(try_s0ix_sleep_first);
 		json_get_pref_optional(sleep_preventing_apps);
+		json_get_pref_optional(lid_close_alert_volume);
 		json_get_pref_optional(main_monitor_name);
 		logA("Loaded preference: %s", dump_pref(pref).dump(2).c_str());
 		return pref;
@@ -81,7 +79,8 @@ preference load_pref()
 	catch (json::exception e)
 	{
 		MessageBoxA(nullptr, e.what(), "delaySleepOnLidClose: preference parse error", MB_OK);
-		return getDefaultPref();
+        preference pref;
+		return pref;
 	}
 }
 
@@ -89,6 +88,7 @@ json dump_pref(const preference &props)
 {
 	return json{
 			{"try_s0ix_sleep_first", props.try_s0ix_sleep_first},
+			{"lid_close_alert_volume", props.lid_close_alert_volume},
 			{"sleep_preventing_apps", props.sleep_preventing_apps},
 			{"main_monitor_name", props.main_monitor_name},
 	};

@@ -13,9 +13,12 @@ using tstring = std::basic_string<TCHAR>;
 
 struct preference
 {
-	bool try_s0ix_sleep_first = false;
+    preference();
+
+	bool try_s0ix_sleep_first;
+    int lid_close_alert_volume;
 	std::set<std::string> sleep_preventing_apps;
-	std::string main_monitor_name = "";
+	std::string main_monitor_name;
 };
 
 tstring getPrefFilePath();
