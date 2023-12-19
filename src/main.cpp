@@ -82,6 +82,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         return 0;
     } else if (msg == WM_DESTROY) {
         deleteTrayIcon(hWnd);
+        PostQuitMessage(0);
         return 0;
     } else if (msg == TRAY_NOTIFY) {
         if (wParam == TRAY_ICON_ID && lParam == WM_RBUTTONUP) {
