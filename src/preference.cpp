@@ -42,10 +42,10 @@ tstring getPrefFilePath()
 }
 
 preference::preference() {
-	try_s0ix_sleep_first = false;
-    lid_close_alert_volume = 100;
+	lid_close_alert_volume = 100;
 	sleep_preventing_apps = {
 			"caffeine.exe",
+			"caffeine32.exe",
 			"caffeine64.exe"};
 	main_monitor_name = getMonitorNameIfOnlyOne();
 }
@@ -69,7 +69,6 @@ preference load_pref()
 	try
 	{
 		json data = json::parse(ifs);
-		json_get_pref_optional(try_s0ix_sleep_first);
 		json_get_pref_optional(sleep_preventing_apps);
 		json_get_pref_optional(lid_close_alert_volume);
 		json_get_pref_optional(main_monitor_name);
@@ -87,7 +86,6 @@ preference load_pref()
 json dump_pref(const preference &props)
 {
 	return json{
-			{"try_s0ix_sleep_first", props.try_s0ix_sleep_first},
 			{"lid_close_alert_volume", props.lid_close_alert_volume},
 			{"sleep_preventing_apps", props.sleep_preventing_apps},
 			{"main_monitor_name", props.main_monitor_name},

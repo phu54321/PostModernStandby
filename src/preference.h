@@ -15,7 +15,6 @@ struct preference
 {
     preference();
 
-	bool try_s0ix_sleep_first;
     int lid_close_alert_volume;
 	std::set<std::string> sleep_preventing_apps;
 	std::string main_monitor_name;

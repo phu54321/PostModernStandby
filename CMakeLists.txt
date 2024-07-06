@@ -14,6 +14,6 @@ add_executable(delaySleepOnLidClose WIN32
 
 		src/utils/volumeRAII.cpp
 		src/utils/WASAPIUtils.cpp
- )
+		src/timerLoop.cpp)
 
 TARGET_LINK_LIBRARIES(delaySleepOnLidClose powrprof winmm)
