@@ -173,7 +173,7 @@ void timerLoop(HWND hWnd, preference &pref) {
                 logA("Transition: LIDCLOSEDACTIVE -> SLEEPPENDING");
                 volumeRAII = nullptr;
                 state = State::SLEEPPENDING;
-                sleepInitiateTime = now + 30;
+                sleepInitiateTime = now + 10;
             } else if (!isLidClosedNow) {
                 logA("Transition: LIDCLOSEDACTIVE -> ACTIVE");
                 volumeRAII = nullptr;
