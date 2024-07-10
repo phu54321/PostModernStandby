@@ -14,7 +14,7 @@ using tstring = std::basic_string<TCHAR>;
 
 struct preference
 {
-    bool allow_clamshell = false;
+    bool allow_clamshell_on_battery = false;
     int lid_close_alert_volume = 100;
 	std::set<std::string> sleep_preventing_apps = {
 			"caffeine.exe",

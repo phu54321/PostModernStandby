@@ -27,7 +27,22 @@ bool isUsingS0ix() {
     return isUsingS0ix;
 }
 
-BOOL shouldSleep(const preference &pref) {
+bool isClamshell(const preference &pref) {
+    if (!pref.allow_clamshell_on_battery && isBattery()) return false;
+
+    auto names = getMonitorNames();
+    bool hasMainMonitor = false;
+    int nonMainMonitorCount = 0;
+    for (const auto &n: names) {
+        if (n == pref.main_monitor_name) {
+            return false;
+        }
+        nonMainMonitorCount++;
+    }
+    return nonMainMonitorCount > 0;
+}
+
+bool shouldSleep(const preference &pref) {
     if (isLidClosed()) {
         if (checkKeepAliveApps(pref))
             return false;
@@ -42,6 +57,10 @@ BOOL shouldSleep(const preference &pref) {
         return true;
     }
     return false;
+}
+
+bool isLidClosedAndNotClamshell(const preference &pref) {
+    return isLidClosed() && !isClamshell(pref);
 }
 
 double currentTime() {
@@ -70,7 +89,7 @@ enum class State {
 void timerLoop(HWND hWnd, preference &pref) {
     static State state = State::ACTIVE;
     bool shouldSleepNow = shouldSleep(pref);
-    bool isLidClosedNow = isLidClosed();
+    bool isLidClosedNow = isLidClosedAndNotClamshell(pref);
     double now = currentTime();
 
 //    logA("Timer loop");

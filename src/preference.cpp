@@ -60,7 +60,7 @@ preference load_pref()
 	try
 	{
 		json data = json::parse(ifs);
-		json_get_pref_optional(allow_clamshell);
+		json_get_pref_optional(allow_clamshell_on_battery);
 		json_get_pref_optional(sleep_preventing_apps);
 		json_get_pref_optional(lid_close_alert_volume);
 		json_get_pref_optional(main_monitor_name);
@@ -78,7 +78,7 @@ preference load_pref()
 json dump_pref(const preference &props)
 {
 	return json{
-			{"allow_clamshell", props.allow_clamshell},
+			{"allow_clamshell_on_battery", props.allow_clamshell_on_battery},
 			{"lid_close_alert_volume", props.lid_close_alert_volume},
 			{"sleep_preventing_apps", props.sleep_preventing_apps},
 			{"main_monitor_name", props.main_monitor_name},
