@@ -20,18 +20,18 @@ std::wstring getLogPath() {
 }
 
 void logA(const char *format, ...) {
-    char buf[1024] = "";
+    char buf[1024] = "[delaySleepOnLidCLose] ";
+    char prefixLen = 23;
 
     va_list args;
             va_start(args, format);
-    vsnprintf(buf, 1024, format, args);
+    vsnprintf(buf + prefixLen, 1024 - prefixLen, format, args);
             va_end(args);
 
     OutputDebugStringA(buf);
-    puts(buf);
 
     auto t = std::time(nullptr);
     auto tm = *std::localtime(&t);
     std::fstream of(getLogPath().c_str(), std::ios_base::app);
-    of << std::put_time(&tm, "[%d-%m-%Y %H-%M-%S] ") << buf << std::endl;
+    of << std::put_time(&tm, "[%d-%m-%Y %H-%M-%S] ") << (buf + prefixLen) << std::endl;
 }
