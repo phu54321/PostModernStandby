@@ -7,17 +7,20 @@
 #include <string>
 #include <windows.h>
 #include "lib/json_fwd.hpp"
+#include "getMonitorName.h"
 
 using nlohmann::json;
 using tstring = std::basic_string<TCHAR>;
 
 struct preference
 {
-    preference();
-
-    int lid_close_alert_volume;
-	std::set<std::string> sleep_preventing_apps;
-	std::string main_monitor_name;
+    bool allow_clamshell = false;
+    int lid_close_alert_volume = 100;
+	std::set<std::string> sleep_preventing_apps = {
+			"caffeine.exe",
+			"caffeine32.exe",
+			"caffeine64.exe"};
+	std::string main_monitor_name = getMonitorNameIfOnlyOne();
 };
 
 tstring getPrefFilePath();
