@@ -118,7 +118,7 @@ void timerLoop(HWND hWnd, preference &pref) {
                 if (shouldSleepNow) {
                     logA("Transition: ACTIVE -> SLEEPPENDING (shouldSleepNow)");
                     state = State::SLEEPPENDING;
-                    sleepInitiateTime = now + 30;
+                    sleepInitiateTime = now + pref.lid_close_sleep_delay_time;
                     break;
                 } else if (isLidClosedNow) {
                     logA("Transition: ACTIVE -> LIDCLOSEDACTIVE (isLidClosedNow)");
