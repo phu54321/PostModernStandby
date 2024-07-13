@@ -7,6 +7,6 @@
 
 #include "preference.h"
 
-void timerLoop(HWND hWnd, preference& pref);
+void timerLoop(HWND hWnd, preference &pref);
 
 #endif //DELAYSLEEPONLIDCLOSE_TIMERLOOP_H

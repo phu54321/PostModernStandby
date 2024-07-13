@@ -9,10 +9,10 @@
 #include <endpointvolume.h>
 #include <memory>
 
-class VolumeRAII
-{
+class VolumeRAII {
 public:
     VolumeRAII(float newVolume);
+
     ~VolumeRAII();
 
 private:

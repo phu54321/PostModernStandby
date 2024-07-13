@@ -8,8 +8,7 @@
 #include "raiiUtils.h"
 #include "../debugLog.h"
 
-VolumeRAII::VolumeRAII(float newVolume)
-{
+VolumeRAII::VolumeRAII(float newVolume) {
     HRESULT hr;
 
     auto outputDevice = getDefaultOutputDevice();
@@ -17,8 +16,7 @@ VolumeRAII::VolumeRAII(float newVolume)
     IAudioEndpointVolume *raw_endpointVolume;
     hr = outputDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, NULL,
                                 reinterpret_cast<void **>(&raw_endpointVolume));
-    if (FAILED(hr))
-    {
+    if (FAILED(hr)) {
         logA("Cannot init IAudioEndpointVolume: %x", hr);
         return;
     }
@@ -26,16 +24,14 @@ VolumeRAII::VolumeRAII(float newVolume)
 
     endpointVolume->GetMute(&_oldMute);
     hr = endpointVolume->GetMasterVolumeLevelScalar(&_oldVolume);
-    if (FAILED(hr))
-    {
+    if (FAILED(hr)) {
         logA("GetMasterVolumeLevelScalar failed: %x", hr);
         return;
     }
 
     hr = endpointVolume->SetMasterVolumeLevelScalar(newVolume, nullptr);
     logA("SetMasterVolumeLevelScalar: %f", newVolume);
-    if (FAILED(hr))
-    {
+    if (FAILED(hr)) {
         logA("SetMasterVolumeLevelScalar failed: %x", hr);
         return;
     }
@@ -45,10 +41,8 @@ VolumeRAII::VolumeRAII(float newVolume)
     _endpointVolume = endpointVolume;
 }
 
-VolumeRAII::~VolumeRAII()
-{
-    if (_endpointVolume)
-    {
+VolumeRAII::~VolumeRAII() {
+    if (_endpointVolume) {
         _endpointVolume->SetMasterVolumeLevelScalar(_oldVolume, nullptr);
         _endpointVolume->SetMute(_oldMute, nullptr);
         logA("SetMasterVolumeLevelScalar: %f", _oldVolume);

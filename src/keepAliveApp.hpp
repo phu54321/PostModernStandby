@@ -2,4 +2,4 @@
 
 #include "preference.h"
 
-bool checkKeepAliveApps(const preference& pref);
+bool checkKeepAliveApps(const preference &pref);

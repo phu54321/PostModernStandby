@@ -12,13 +12,12 @@
 const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);
 const IID IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
 
-bool iterateAudioEndPoints(const std::function<bool(IMMDevicePtr pMMDevice)> &cb)
-{
+bool iterateAudioEndPoints(const std::function<bool(IMMDevicePtr pMMDevice)> &cb) {
     IMMDeviceEnumerator *pEnumerator_ = nullptr;
     HRESULT hr = CoCreateInstance(
-        CLSID_MMDeviceEnumerator, nullptr,
-        CLSCTX_ALL, IID_IMMDeviceEnumerator,
-        (void **)&pEnumerator_);
+            CLSID_MMDeviceEnumerator, nullptr,
+            CLSCTX_ALL, IID_IMMDeviceEnumerator,
+            (void **) &pEnumerator_);
     if (FAILED(hr))
         return false;
 
@@ -35,8 +34,7 @@ bool iterateAudioEndPoints(const std::function<bool(IMMDevicePtr pMMDevice)> &cb
     if (FAILED(hr))
         return false;
 
-    for (UINT i = 0; i < nDevices; i++)
-    {
+    for (UINT i = 0; i < nDevices; i++) {
         IMMDevice *pMMDevice_ = nullptr;
         hr = pMMDeviceCollection->Item(i, &pMMDevice_);
         if (FAILED(hr))
@@ -49,14 +47,13 @@ bool iterateAudioEndPoints(const std::function<bool(IMMDevicePtr pMMDevice)> &cb
     return true;
 }
 
-IMMDevicePtr getDefaultOutputDevice()
-{
+IMMDevicePtr getDefaultOutputDevice() {
     IMMDeviceEnumerator *pEnumerator_ = nullptr;
 
     HRESULT hr = CoCreateInstance(
-        CLSID_MMDeviceEnumerator, nullptr,
-        CLSCTX_ALL, IID_IMMDeviceEnumerator,
-        (void **)&pEnumerator_);
+            CLSID_MMDeviceEnumerator, nullptr,
+            CLSCTX_ALL, IID_IMMDeviceEnumerator,
+            (void **) &pEnumerator_);
     if (FAILED(hr))
         return nullptr;
 
@@ -71,18 +68,16 @@ IMMDevicePtr getDefaultOutputDevice()
 
 ////
 
-std::vector<IMMDevicePtr> getIMMDeviceList()
-{
+std::vector<IMMDevicePtr> getIMMDeviceList() {
     std::vector<IMMDevicePtr> v;
-    iterateAudioEndPoints([&](auto p)
-                          {
+    iterateAudioEndPoints([&](auto p) {
         v.push_back(p);
-        return true; });
+        return true;
+    });
     return v;
 }
 
-std::wstring getDeviceId(const IMMDevicePtr &pDevice)
-{
+std::wstring getDeviceId(const IMMDevicePtr &pDevice) {
     std::wstring id;
     LPWSTR pDeviceId = nullptr;
     HRESULT hr = pDevice->GetId(&pDeviceId);
@@ -94,8 +89,7 @@ std::wstring getDeviceId(const IMMDevicePtr &pDevice)
     return id;
 }
 
-std::wstring getDeviceFriendlyName(const IMMDevicePtr &pDevice)
-{
+std::wstring getDeviceFriendlyName(const IMMDevicePtr &pDevice) {
     IPropertyStore *pPropertyStore_;
     HRESULT hr = pDevice->OpenPropertyStore(STGM_READ, &pPropertyStore_);
     if (FAILED(hr))
@@ -105,8 +99,7 @@ std::wstring getDeviceFriendlyName(const IMMDevicePtr &pDevice)
     PROPVARIANT var;
     PropVariantInit(&var);
     hr = pPropertyStore->GetValue(PKEY_Device_FriendlyName, &var);
-    if (FAILED(hr) || var.vt != VT_LPWSTR)
-    {
+    if (FAILED(hr) || var.vt != VT_LPWSTR) {
         PropVariantClear(&var);
         return L"";
     }

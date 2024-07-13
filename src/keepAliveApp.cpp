@@ -11,31 +11,27 @@
 #include <codecvt>
 #include <locale>
 
-static std::string to_utf8(const std::wstring& wide_string)
-{
+static std::string to_utf8(const std::wstring &wide_string) {
     static std::wstring_convert<std::codecvt_utf8<wchar_t>> utf8_conv;
     return utf8_conv.to_bytes(wide_string);
 }
 
 //
 
-bool checkKeepAliveApps(const preference& pref)
-{
+bool checkKeepAliveApps(const preference &pref) {
     HANDLE hSnapShot;
     PROCESSENTRY32W pEntry;
     bool ret = false;
 
-    const auto& keepAliveApps = pref.sleep_preventing_apps;
+    const auto &keepAliveApps = pref.sleep_preventing_apps;
 
     hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPALL, 0);
     pEntry.dwSize = sizeof(pEntry);
 
-    for (BOOL hRes = Process32FirstW(hSnapShot, &pEntry); hRes; hRes = Process32NextW(hSnapShot, &pEntry))
-    {
+    for (BOOL hRes = Process32FirstW(hSnapShot, &pEntry); hRes; hRes = Process32NextW(hSnapShot, &pEntry)) {
         std::string pn = to_utf8(pEntry.szExeFile);
         std::transform(pn.begin(), pn.end(), pn.begin(), tolower);
-        if (keepAliveApps.find(pn) != keepAliveApps.end())
-        {
+        if (keepAliveApps.find(pn) != keepAliveApps.end()) {
             ret = true;
             break;
         }
