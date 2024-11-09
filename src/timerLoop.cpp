@@ -6,10 +6,11 @@
 #include <Windows.h>
 #include <powerbase.h>
 #include <powrprof.h>
-#include "debugLog.h"
+#include "utils/debugLog.h"
 #include "utils/volumeRAII.h"
+#include "utils/getMonitorName.h"
+#include "utils/radio.h"
 #include "preference.h"
-#include "getMonitorName.h"
 #include "lidClose.h"
 #include "keepAliveApp.hpp"
 #include "res/resource.h"
@@ -67,7 +68,11 @@ double currentTime() {
     return GetTickCount64() / 1000.0;
 }
 
-void sleepNow(HWND hWnd) {
+void sleepNow(const preference &pref, HWND hWnd) {
+    if (pref.disable_bluetooth_on_sleep) {
+        turnOffRadio();
+    }
+
     if (isUsingS0ix()) {
         logA("[sleepNow] S0ix sleep");
         SendMessageA(hWnd, WM_SYSCOMMAND, SC_MONITORPOWER, (LPARAM) 2);
@@ -132,11 +137,11 @@ void timerLoop(HWND hWnd, preference &pref) {
                 // Wait for 30 seconds before sleeping
                 if (shouldSleepNow) {
                     if (now >= sleepInitiateTime) {
-                        logA("Transition: SLEEPPENDING -> SLEEP (time elapsed)");
+                        logA("Transition: SLEEPPENDING -> SLEEP (time elapsed) - now sleeping...");
                         sleepInitiateTime = now + 300;
                         lastTickTime = now;
                         state = State::SLEEP;
-                        sleepNow(hWnd);
+                        sleepNow(pref, hWnd);
                         break;
                     }
                 } else {
@@ -175,18 +180,25 @@ void timerLoop(HWND hWnd, preference &pref) {
                         // https://learn.microsoft.com/en-us/windows-hardware/design/device-experiences/modern-standby-states
                         // Laptop might not be able to sleep quickly enough, so we give 5 more minutes before trying to sleep again.
                         sleepInitiateTime = now + 300;
-                        sleepNow(hWnd);
+                        logA("Woke mid-sleep: sleeping again...");
+                        sleepNow(pref, hWnd);
                     }
 
                     lastTickTime = now;
                 } else {
                     if (isLidClosedNow) {
                         logA("Transition: SLEEP -> LIDCLOSEDACTIVE (isLidClosedNow)");
+                        if (pref.disable_bluetooth_on_sleep) {
+                            resumeRadio();
+                        }
                         state = State::LIDCLOSEDACTIVE;
                         lidCloseAlarmTime = now;
                         break;
                     } else {
                         logA("Transition: SLEEP -> ACTIVE");
+                        if (pref.disable_bluetooth_on_sleep) {
+                            resumeRadio();
+                        }
                         state = State::ACTIVE;
                         break;
                     }

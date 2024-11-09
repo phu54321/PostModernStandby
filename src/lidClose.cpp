@@ -1,6 +1,6 @@
 #include <windows.h>
 #include <powrprof.h>
-#include "debugLog.h"
+#include "utils/debugLog.h"
 
 static bool _isLidClosed = false;
 static bool _isBattery = false;

@@ -6,7 +6,7 @@
 #include "volumeRAII.h"
 #include "WASAPIUtils.h"
 #include "raiiUtils.h"
-#include "../debugLog.h"
+#include "debugLog.h"
 
 VolumeRAII::VolumeRAII(float newVolume) {
     HRESULT hr;

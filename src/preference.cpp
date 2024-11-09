@@ -7,8 +7,8 @@
 
 #include "preference.h"
 #include "lib/json.hpp"
-#include "debugLog.h"
-#include "getMonitorName.h"
+#include "utils/debugLog.h"
+#include "utils/getMonitorName.h"
 
 #pragma comment(lib, "shlwapi.lib")
 
@@ -57,6 +57,7 @@ preference load_pref() {
         json_get_pref_optional(sleep_preventing_apps);
         json_get_pref_optional(lid_close_alert_volume);
         json_get_pref_optional(main_monitor_name);
+        json_get_pref_optional(disable_bluetooth_on_sleep);
         logA("Loaded preference: %s", dump_pref(pref).dump(2).c_str());
         return pref;
     }
@@ -70,6 +71,7 @@ preference load_pref() {
 json dump_pref(const preference &props) {
     return json{
             {"allow_clamshell_on_battery", props.allow_clamshell_on_battery},
+            {"disable_bluetooth_on_sleep", props.disable_bluetooth_on_sleep},
             {"lid_close_alert_volume",     props.lid_close_alert_volume},
             {"lid_close_sleep_delay_time", props.lid_close_sleep_delay_time},
             {"main_monitor_name",          props.main_monitor_name},

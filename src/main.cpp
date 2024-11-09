@@ -8,10 +8,10 @@
 
 #include "lidClose.h"
 #include "keepAliveApp.hpp"
-#include "debugLog.h"
-#include "accessToken.h"
+#include "utils/debugLog.h"
+#include "utils/accessToken.h"
 #include "preference.h"
-#include "getMonitorName.h"
+#include "utils/getMonitorName.h"
 #include "res/resource.h"
 #include "timerLoop.h"
 
