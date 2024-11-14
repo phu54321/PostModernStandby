@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <winrt/Windows.Foundation.h>
 #include <powrprof.h>
 #include <tlhelp32.h>
 #include <string>
@@ -124,6 +125,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
         return 0;
     }
 
+    winrt::init_apartment();
     CoInitialize(nullptr);
 
     WNDCLASS wndClass;
