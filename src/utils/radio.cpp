@@ -19,41 +19,32 @@ using namespace winrt::Windows::Foundation;
 
 std::map<hstring, RadioState> oldBluetoothStateMap;
 
-void turnOffRadio()
-{
+void turnOffRadio() {
     std::vector<IAsyncOperation<RadioAccessStatus>> ops;
     auto radioList = Radio::GetRadiosAsync().get();
-    for (Radio radio : radioList)
-    {
-        if (radio.Kind() == RadioKind::Bluetooth)
-        {
+    for (Radio radio: radioList) {
+        if (radio.Kind() == RadioKind::Bluetooth) {
             auto it = oldBluetoothStateMap.find(radio.Name());
-            if (it == oldBluetoothStateMap.end())
-            {
+            if (it == oldBluetoothStateMap.end()) {
                 auto oldState = radio.State();
                 oldBluetoothStateMap[radio.Name()] = oldState;
-                //                ops.push_back(radio.SetStateAsync(RadioState::Off));
+                ops.push_back(radio.SetStateAsync(RadioState::Off));
                 logA(" - %s: %d -> Off(2)", to_string(radio.Name()).c_str(), static_cast<int>(oldState));
             }
         }
     }
     // wait all SetStateAsync to complete
-    for (auto &&op : ops)
-    {
+    for (auto &&op: ops) {
         op.get();
     }
 }
 
-void resumeRadio()
-{
+void resumeRadio() {
     std::vector<IAsyncOperation<RadioAccessStatus>> ops;
-    for (Radio radio : Radio::GetRadiosAsync().get())
-    {
-        if (radio.Kind() == RadioKind::Bluetooth)
-        {
+    for (Radio radio: Radio::GetRadiosAsync().get()) {
+        if (radio.Kind() == RadioKind::Bluetooth) {
             auto it = oldBluetoothStateMap.find(radio.Name());
-            if (it != oldBluetoothStateMap.end())
-            {
+            if (it != oldBluetoothStateMap.end()) {
                 auto newState = it->second;
                 ops.push_back(radio.SetStateAsync(newState));
                 oldBluetoothStateMap.erase(it);
@@ -62,8 +53,7 @@ void resumeRadio()
         }
     }
     // wait all SetStateAsync to complete
-    for (auto &&op : ops)
-    {
+    for (auto &&op: ops) {
         op.get();
     }
 }
