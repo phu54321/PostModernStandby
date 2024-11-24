@@ -2,7 +2,7 @@
 
 #include <windows.h>
 
-void registerPowerNotificationReceiver(HWND hWnd);
+void registerPowerSuspendNotificationReceiver(HWND hWnd);
 
 bool ProcessLidCloseEvent(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 

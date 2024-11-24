@@ -18,8 +18,12 @@ using namespace winrt::Windows::Devices::Radios;
 using namespace winrt::Windows::Foundation;
 
 std::map<hstring, RadioState> oldBluetoothStateMap;
+static int g_turnOffRadioCounter = 0;
 
 void turnOffRadio() {
+    g_turnOffRadioCounter++;
+    if (g_turnOffRadioCounter > 1) return;
+
     std::vector<IAsyncOperation<RadioAccessStatus>> ops;
     auto radioList = Radio::GetRadiosAsync().get();
     for (Radio radio: radioList) {
@@ -40,6 +44,9 @@ void turnOffRadio() {
 }
 
 void resumeRadio() {
+    g_turnOffRadioCounter--;
+    if (g_turnOffRadioCounter > 0) return;
+
     std::vector<IAsyncOperation<RadioAccessStatus>> ops;
     for (Radio radio: Radio::GetRadiosAsync().get()) {
         if (radio.Kind() == RadioKind::Bluetooth) {

@@ -33,7 +33,8 @@ bool isBattery() {
     return _isBattery;
 }
 
-void registerPowerNotificationReceiver(HWND hWnd) {
+void registerPowerSuspendNotificationReceiver(HWND hWnd) {
     RegisterPowerSettingNotification(hWnd, &GUID_ACDC_POWER_SOURCE, 0);
     RegisterPowerSettingNotification(hWnd, &GUID_LIDSWITCH_STATE_CHANGE, 0);
+    RegisterSuspendResumeNotification(hWnd, DEVICE_NOTIFY_WINDOW_HANDLE);
 }

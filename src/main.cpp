@@ -11,8 +11,9 @@
 #include "keepAliveApp.hpp"
 #include "utils/debugLog.h"
 #include "utils/accessToken.h"
-#include "preference.h"
 #include "utils/getMonitorName.h"
+#include "utils/radio.h"
+#include "preference.h"
 #include "res/resource.h"
 #include "timerLoop.h"
 
@@ -46,13 +47,42 @@ void deleteTrayIcon(HWND hWnd) {
     Shell_NotifyIcon(NIM_DELETE, &nid);
 }
 
+bool ProcessSuspendResumeNotification(HWND rhWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    if (msg == WM_POWERBROADCAST) {
+        switch (wParam) {
+            case PBT_APMSUSPEND: {
+                if (pref.disable_bluetooth_on_sleep) {
+                    logA("[PBT_APMSUSPEND] Turning bluetooth OFF...");
+                    turnOffRadio();
+                    return true;
+                }
+                break;
+            }
+
+            case PBT_APMRESUMESUSPEND: {
+                if (pref.disable_bluetooth_on_sleep) {
+                    logA("[PBT_APMRESUMESUSPEND] Turning bluetooth ON...");
+                    resumeRadio();
+                    return true;
+                }
+                break;
+            }
+            default:;
+        }
+    }
+    return false;
+}
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     if (ProcessLidCloseEvent(hWnd, msg, wParam, lParam))
         return TRUE;
 
+    if (ProcessSuspendResumeNotification(hWnd, msg, wParam, lParam))
+        return TRUE;
+
     if (msg == WM_CREATE) {
         auto hInstance = (HINSTANCE) GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
-        registerPowerNotificationReceiver(hWnd);
+        registerPowerSuspendNotificationReceiver(hWnd);
         addTrayIcon(hInstance, hWnd);
 
         SetTimer(hWnd, ID_MAIN_TIMER, 1000, NULL);
