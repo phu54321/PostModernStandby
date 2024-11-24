@@ -31,8 +31,11 @@ void logA(const char *format, ...) {
 
     OutputDebugStringA(buf);
 
-    auto t = std::time(nullptr);
-    auto tm = *std::localtime(&t);
-    std::fstream of(getLogPath().c_str(), std::ios_base::app);
-    of << std::put_time(&tm, "[%d-%m-%Y %H-%M-%S] ") << (buf + prefixLen) << std::endl;
+    auto logPath = getLogPath();
+    if (std::filesystem::exists(logPath)) {
+        auto t = std::time(nullptr);
+        auto tm = *std::localtime(&t);
+        std::fstream of(logPath, std::ios_base::app);
+        of << std::put_time(&tm, "[%d-%m-%Y %H-%M-%S] ") << (buf + prefixLen) << std::endl;
+    }
 }
