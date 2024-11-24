@@ -35,7 +35,7 @@ void addTrayIcon(HINSTANCE hInstance, HWND hWnd) {
     nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     nid.uCallbackMessage = TRAY_NOTIFY;
     nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON));
-    _tcsncpy(nid.szTip, TEXT("delaySleepOnLidClose"), 128);
+    _tcsncpy(nid.szTip, TEXT("PostModernStandby"), 128);
     Shell_NotifyIcon(NIM_ADD, &nid);
 }
 
@@ -149,7 +149,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
         return 2;
     }
 
-    auto mutex = CreateMutex(nullptr, TRUE, TEXT("Global\\delaySleepOnLidClose"));
+    auto mutex = CreateMutex(nullptr, TRUE, TEXT("Global\\PostModernStandby"));
     if (!mutex || GetLastError()) {
         MessageBox(nullptr, TEXT("Another instance already running."), TEXT("Error"), MB_OK);
         return 0;
@@ -161,14 +161,14 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
     WNDCLASS wndClass;
     memset(&wndClass, 0, sizeof(WNDCLASS));
     wndClass.hInstance = hInstance;
-    wndClass.lpszClassName = TEXT("delaySleepOnLidClose");
+    wndClass.lpszClassName = TEXT("PostModernStandby");
     wndClass.lpfnWndProc = WndProc;
     RegisterClass(&wndClass);
 
     HWND hWnd = CreateWindowEx(
             WS_EX_LEFT,
-            TEXT("delaySleepOnLidClose"),
-            TEXT("delaySleepOnLidClose"),
+            TEXT("PostModernStandby"),
+            TEXT("PostModernStandby"),
             0,
             0, 0,
             CW_USEDEFAULT, CW_USEDEFAULT,

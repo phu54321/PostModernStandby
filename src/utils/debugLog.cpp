@@ -6,21 +6,22 @@
 #include <fstream>
 #include <ctime>
 #include <iomanip>
+#include <filesystem>
 
-std::wstring getLogPath() {
+static std::wstring getLogPath() {
     static bool initialized = false;
     static std::wstring path;
 
     if (!initialized) {
         WCHAR dir[MAX_PATH] = {0};
         SHGetFolderPathW(NULL, CSIDL_PROFILE, NULL, 0, dir);
-        path = std::wstring(dir) + L"\\delaySleepOnLidClose.log";
+        path = std::wstring(dir) + L"\\PostModernStandby.log";
     }
     return path;
 }
 
 void logA(const char *format, ...) {
-    char buf[1024] = "[delaySleepOnLidCLose] ";
+    char buf[1024] = "[PostModernStandby] ";
     char prefixLen = 23;
 
     va_list args;

@@ -15,7 +15,7 @@
 static tstring getPrefFolder() {
     TCHAR szPath[MAX_PATH];
     if (SHGetFolderPath(NULL, CSIDL_COMMON_APPDATA, NULL, 0, szPath) == 0) {
-        PathAppend(szPath, TEXT("\\trgksoft\\delaySleepOnLidClose\\"));
+        PathAppend(szPath, TEXT("\\trgksoft\\PostModernStandby\\"));
         return szPath;
     } else {
         throw new std::runtime_error("Cannot get preference folder");
@@ -62,7 +62,7 @@ preference load_pref() {
         return pref;
     }
     catch (json::exception e) {
-        MessageBoxA(nullptr, e.what(), "delaySleepOnLidClose: preference parse error", MB_OK);
+        MessageBoxA(nullptr, e.what(), "PostModernStandby: preference parse error", MB_OK);
         preference pref;
         return pref;
     }
