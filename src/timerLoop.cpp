@@ -70,6 +70,7 @@ double currentTime() {
 
 void sleepNow(const preference &pref, HWND hWnd) {
     if (pref.disable_bluetooth_on_sleep) {
+        logA("[sleepNow] Turning bluetooth off");
         turnOffRadio();
     }
 
@@ -189,6 +190,7 @@ void timerLoop(HWND hWnd, preference &pref) {
                     if (isLidClosedNow) {
                         logA("Transition: SLEEP -> LIDCLOSEDACTIVE (isLidClosedNow)");
                         if (pref.disable_bluetooth_on_sleep) {
+                            logA(" - resuming bluetooth");
                             resumeRadio();
                         }
                         state = State::LIDCLOSEDACTIVE;

@@ -54,19 +54,26 @@ bool ProcessSuspendResumeNotification(HWND rhWnd, UINT msg, WPARAM wParam, LPARA
                 if (pref.disable_bluetooth_on_sleep) {
                     logA("[PBT_APMSUSPEND] Turning bluetooth OFF...");
                     turnOffRadio();
-                    return true;
                 }
-                break;
+                return true;
             }
 
             case PBT_APMRESUMESUSPEND: {
                 if (pref.disable_bluetooth_on_sleep) {
                     logA("[PBT_APMRESUMESUSPEND] Turning bluetooth ON...");
                     resumeRadio();
-                    return true;
                 }
-                break;
+                return true;
             }
+
+            case PBT_APMRESUMECRITICAL: {
+                if (pref.disable_bluetooth_on_sleep) {
+                    logA("[PBT_APMRESUMECRITICAL] Turning bluetooth ON...");
+                    resumeRadio();
+                }
+                return true;
+            }
+
             default:;
         }
     }
