@@ -27,6 +27,8 @@
 
 preference pref = load_pref();
 
+UINT WM_TASKBARCREATED = -1;
+
 void addTrayIcon(HINSTANCE hInstance, HWND hWnd) {
     NOTIFYICONDATA nid = {0};
     nid.cbSize = sizeof(nid);
@@ -87,7 +89,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     if (ProcessSuspendResumeNotification(hWnd, msg, wParam, lParam))
         return TRUE;
 
-    if (msg == WM_CREATE) {
+    if (msg == WM_TASKBARCREATED) {
+        auto hInstance = (HINSTANCE) GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
+        addTrayIcon(hInstance, hWnd);
+        return 0;
+    } else if (msg == WM_CREATE) {
         auto hInstance = (HINSTANCE) GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
         registerPowerSuspendNotificationReceiver(hWnd);
         addTrayIcon(hInstance, hWnd);
@@ -164,6 +170,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
 
     winrt::init_apartment();
     CoInitialize(nullptr);
+
+    WM_TASKBARCREATED = RegisterWindowMessageW(L"TaskbarCreated");
 
     WNDCLASS wndClass;
     memset(&wndClass, 0, sizeof(WNDCLASS));
