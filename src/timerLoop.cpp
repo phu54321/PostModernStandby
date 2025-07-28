@@ -230,7 +230,7 @@ void timerLoop(HWND hWnd, preference &pref) {
                         // Set volume RAII so that the main speaker volumes up, even on mute.
                         volumeRAII = std::make_unique<VolumeRAII>(pref.lid_close_alert_volume / 100.0f);
                         PlaySound(MAKEINTRESOURCE(IDR_ALERT), hInstance, SND_RESOURCE | SND_ASYNC);
-                        lidCloseAlarmEndTime = now + 3;
+                        lidCloseAlarmEndTime = now + 1.5;
                         lidCloseAlarmTime += 30 * 60;  // Next alarm should fire 30 minute later.
                     }
 

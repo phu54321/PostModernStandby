@@ -1,4 +1,4 @@
 #include "resource.h"
 
 IDI_ICON               ICON                    "../../icon.ico"
-IDR_ALERT              WAVE                    "alarm.wav"
+IDR_ALERT              WAVE                    "72128__kizilsungur__sweetalertsound4.wav"
