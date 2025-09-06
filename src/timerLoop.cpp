@@ -69,11 +69,6 @@ double currentTime() {
 }
 
 void sleepNow(const preference &pref, HWND hWnd) {
-    if (pref.disable_bluetooth_on_sleep) {
-        logA("[sleepNow] Turning bluetooth off");
-        turnOffRadio();
-    }
-
     if (isUsingS0ix()) {
         logA("[sleepNow] S0ix sleep");
         SendMessageA(hWnd, WM_SYSCOMMAND, SC_MONITORPOWER, (LPARAM) 2);
