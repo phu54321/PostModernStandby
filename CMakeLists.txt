@@ -17,5 +17,5 @@ add_executable(PostModernStandby WIN32
 		src/utils/WASAPIUtils.cpp
 		src/timerLoop.cpp)
 
-target_link_libraries(PostModernStandby powrprof winmm)
+target_link_libraries(PostModernStandby powrprof winmm runtimeobject)
 set_property(TARGET PostModernStandby PROPERTY CXX_STANDARD 17)
