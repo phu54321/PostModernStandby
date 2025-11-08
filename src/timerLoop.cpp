@@ -101,7 +101,7 @@ void timerLoop(HWND hWnd, preference &pref) {
 
     // LIDCLOSEDACTIVE
     static double lidCloseAlarmTime;
-    std::unique_ptr<VolumeRAII> volumeRAII = nullptr;
+    static std::unique_ptr<VolumeRAII> volumeRAII = nullptr;
     static double lidCloseAlarmEndTime;  // Private variable. Only valid when `volumeRAII` is not NULL.
 
     // SLEEPPENDING
@@ -230,6 +230,7 @@ void timerLoop(HWND hWnd, preference &pref) {
                     }
 
                     if (volumeRAII && now >= lidCloseAlarmEndTime) {
+                        logA("Unser volumeRAII");
                         volumeRAII = nullptr;
                     }
                 }

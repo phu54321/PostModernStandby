@@ -7,6 +7,7 @@
 #define ASIO2WASAPI2_RAIIUTILS_H
 
 #include <memory>
+#include <Windows.h>
 
 template<typename T>
 auto make_autorelease(T *ptr) {

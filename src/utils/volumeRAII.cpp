@@ -36,7 +36,13 @@ VolumeRAII::VolumeRAII(float newVolume) {
         return;
     }
 
-    endpointVolume->SetMute(false, nullptr);
+    hr = endpointVolume->SetMute(false, nullptr);
+    logA("SetMute: 0");
+    if (FAILED(hr)) {
+        logA("SetMute failed: %x", hr);
+        endpointVolume->SetMasterVolumeLevelScalar(_oldVolume, nullptr);
+        return;
+    }
 
     _endpointVolume = endpointVolume;
 }
@@ -45,6 +51,7 @@ VolumeRAII::~VolumeRAII() {
     if (_endpointVolume) {
         _endpointVolume->SetMasterVolumeLevelScalar(_oldVolume, nullptr);
         _endpointVolume->SetMute(_oldMute, nullptr);
-        logA("SetMasterVolumeLevelScalar: %f", _oldVolume);
+        logA("[unset] SetMasterVolumeLevelScalar: %f", _oldVolume);
+        logA("[unset] SetMute: %d", _oldMute);
     }
 }
