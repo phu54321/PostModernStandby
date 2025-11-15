@@ -98,7 +98,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         registerPowerSuspendNotificationReceiver(hWnd);
         addTrayIcon(hInstance, hWnd);
 
-        SetTimer(hWnd, ID_MAIN_TIMER, 1000, NULL);
+        SetTimer(hWnd, ID_MAIN_TIMER, 5000, nullptr);
         return 0;
     } else if (msg == WM_DESTROY) {
         deleteTrayIcon(hWnd);
@@ -118,7 +118,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             POINT pt;
             GetCursorPos(&pt);
             SetForegroundWindow(hWnd);
-            TrackPopupMenu(hPopupMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON, pt.x, pt.y, 0, hWnd, NULL);
+            TrackPopupMenu(hPopupMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON, pt.x, pt.y, 0, hWnd, nullptr);
             SetForegroundWindow(hWnd);
             PostMessage(hWnd, WM_NULL, 0, 0);
 
@@ -137,7 +137,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         }
 
         if (wmId == MENU_PREF_EDIT_MESSAGE) {
-            ShellExecute(hWnd, NULL, getPrefFilePath().c_str(), NULL, NULL, SW_SHOWNORMAL);
+            ShellExecute(hWnd, nullptr, getPrefFilePath().c_str(), nullptr, nullptr, SW_SHOWNORMAL);
             return 0;
         }
 
@@ -200,7 +200,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
     MSG msg = {};
 
     pref = load_pref();
-    if (pref.main_monitor_name == "") {
+    if (pref.main_monitor_name.empty()) {
         auto currentMonitor = getMonitorNameIfOnlyOne();
         if (!currentMonitor.empty()) {
             pref.main_monitor_name = currentMonitor;

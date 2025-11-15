@@ -14,6 +14,7 @@
 #include "lidClose.h"
 #include "keepAliveApp.hpp"
 #include "res/resource.h"
+#include "utils/lazy.h"
 
 
 bool checkUsingS0ix() {
@@ -68,10 +69,19 @@ enum class State {
 
 void timerLoop(HWND hWnd, preference &pref) {
     static State state = State::ACTIVE;
-    bool hasKeepAliveApps = checkKeepAliveApps(pref);
-    bool isClamshell = checkClamshell(pref);
     bool isLidClosedNow = isLidClosed();
-    bool shouldSleepNow = isLidClosedNow && !isClamshell && !hasKeepAliveApps;
+
+    // most of the time isLidClosed will be false, computer will be active, and
+    // we don't need to check these kind of expensive ops:
+    //  - iterating processes
+    //  - iterating monitors
+    //  - etc.
+    // so let's keep everything lazy evaluated.
+    auto hasKeepAliveAppsLazy = lazy([&]() { return checkKeepAliveApps(pref); });
+    auto isClamshellLazy = lazy([&]() { return checkClamshell(pref); });
+    auto shouldSleepNowLazy = lazy([&]() {
+        return isLidClosedNow && !isClamshellLazy.get() && !hasKeepAliveAppsLazy.get();
+    });
 
     double now = currentTime();
 
@@ -99,7 +109,7 @@ void timerLoop(HWND hWnd, preference &pref) {
             case State::ACTIVE:
                 // Laptop is awake. No sleep.
                 if (isLidClosedNow) {
-                    if (shouldSleepNow) {
+                    if (shouldSleepNowLazy.get()) {
                         logA("Transition: ACTIVE -> SLEEPPENDING (shouldSleepNow)");
                         state = State::SLEEPPENDING;
                         sleepInitiateTime = now + pref.lid_close_sleep_delay_time;
@@ -114,7 +124,7 @@ void timerLoop(HWND hWnd, preference &pref) {
 
             case State::SLEEPPENDING:
                 // Wait for 30 seconds before sleeping
-                if (shouldSleepNow) {
+                if (shouldSleepNowLazy.get()) {
                     if (now >= sleepInitiateTime) {
                         logA("Transition: SLEEPPENDING -> SLEEP (time elapsed) - now sleeping...");
                         sleepInitiateTime = now + 300;
@@ -139,7 +149,7 @@ void timerLoop(HWND hWnd, preference &pref) {
 
             case State::SLEEP:
                 // Initiate sleep & (if required) re-sleep when laptop wake.
-                if (shouldSleepNow) {
+                if (shouldSleepNowLazy.get()) {
                     // Tick in 180 seconds: timer loop was interrupted more than 3 minutes
                     // This probably mean that the laptop was sleeping for at least 3 minutes
                     // before running this loop again.
@@ -187,8 +197,8 @@ void timerLoop(HWND hWnd, preference &pref) {
 
             case State::LIDCLOSEDACTIVE:
                 // Lid closed, but active due to clamshell mode or caffeinate
-                // Throw alarm notification periodically
-                if (shouldSleepNow) {
+                // Throw alarm notification periodically if keepalive apps are on.
+                if (shouldSleepNowLazy.get()) {
                     logA("Transition: LIDCLOSEDACTIVE -> SLEEPPENDING");
                     volumeRAII = nullptr;
                     state = State::SLEEPPENDING;
@@ -200,7 +210,8 @@ void timerLoop(HWND hWnd, preference &pref) {
                     state = State::ACTIVE;
                     break;
                 } else {
-                    if (isClamshell) {
+                    // Don't throw alarm on clamshell mode.
+                    if (isClamshellLazy.get()) {
                         lidCloseAlarmTime = now;
                         if (volumeRAII) volumeRAII = nullptr;
                     } else if (now >= lidCloseAlarmTime) {
@@ -214,7 +225,7 @@ void timerLoop(HWND hWnd, preference &pref) {
                     }
 
                     if (volumeRAII && now >= lidCloseAlarmEndTime) {
-                        logA("Unser volumeRAII");
+                        logA("Unset volumeRAII");
                         volumeRAII = nullptr;
                     }
                 }
