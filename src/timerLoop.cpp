@@ -16,23 +16,22 @@
 #include "res/resource.h"
 
 
-bool isUsingS0ix() {
+bool checkUsingS0ix() {
     static bool initialized = false;
     static bool isUsingS0ix;
 
     if (!initialized) {
         SYSTEM_POWER_CAPABILITIES spc = {0};
-        NTSTATUS nRet = CallNtPowerInformation(SystemPowerCapabilities, NULL, 0, &spc, sizeof(spc));
+        CallNtPowerInformation(SystemPowerCapabilities, NULL, 0, &spc, sizeof(spc));
         isUsingS0ix = spc.AoAc;
     }
     return isUsingS0ix;
 }
 
-bool isClamshell(const preference &pref) {
+bool checkClamshell(const preference &pref) {
     if (!pref.allow_clamshell_on_battery && isBattery()) return false;
 
     auto names = getMonitorNames();
-    bool hasMainMonitor = false;
     int nonMainMonitorCount = 0;
     for (const auto &n: names) {
         if (n == pref.main_monitor_name) {
@@ -43,33 +42,13 @@ bool isClamshell(const preference &pref) {
     return nonMainMonitorCount > 0;
 }
 
-bool shouldSleep(const preference &pref) {
-    if (isLidClosed()) {
-        if (checkKeepAliveApps(pref))
-            return false;
-
-        // check clamshell mode
-        if (!isBattery()) {
-            auto currentMonitor = getMonitorNameIfOnlyOne();
-            if (!currentMonitor.empty() && currentMonitor != pref.main_monitor_name)
-                return false;
-        }
-
-        return true;
-    }
-    return false;
-}
-
-bool isLidClosedAndNotClamshell(const preference &pref) {
-    return isLidClosed() && !isClamshell(pref);
-}
 
 double currentTime() {
     return GetTickCount64() / 1000.0;
 }
 
 void sleepNow(const preference &pref, HWND hWnd) {
-    if (isUsingS0ix()) {
+    if (checkUsingS0ix()) {
         logA("[sleepNow] S0ix sleep");
         SendMessageA(hWnd, WM_SYSCOMMAND, SC_MONITORPOWER, (LPARAM) 2);
     } else {
@@ -89,11 +68,14 @@ enum class State {
 
 void timerLoop(HWND hWnd, preference &pref) {
     static State state = State::ACTIVE;
-    bool shouldSleepNow = shouldSleep(pref);
-    bool isLidClosedNow = isLidClosedAndNotClamshell(pref);
+    bool hasKeepAliveApps = checkKeepAliveApps(pref);
+    bool isClamshell = checkClamshell(pref);
+    bool isLidClosedNow = isLidClosed();
+    bool shouldSleepNow = isLidClosedNow && !isClamshell && !hasKeepAliveApps;
+
     double now = currentTime();
 
-//    logA("Timer loop");
+    //    logA("Timer loop");
 
     // Variables for each state
     // ACTIVE
@@ -102,10 +84,10 @@ void timerLoop(HWND hWnd, preference &pref) {
     // LIDCLOSEDACTIVE
     static double lidCloseAlarmTime;
     static std::unique_ptr<VolumeRAII> volumeRAII = nullptr;
-    static double lidCloseAlarmEndTime;  // Private variable. Only valid when `volumeRAII` is not NULL.
+    static double lidCloseAlarmEndTime; // Private variable. Only valid when `volumeRAII` is not NULL.
 
     // SLEEPPENDING
-    static double sleepInitiateTime;  // SLEEPPENDING & LIDCLOSEDSLEEP
+    static double sleepInitiateTime; // SLEEPPENDING & LIDCLOSEDSLEEP
 
     // SLEEP
     // static double sleepInitiateTime;  // SLEEPPENDING & LIDCLOSEDSLEEP
@@ -116,15 +98,16 @@ void timerLoop(HWND hWnd, preference &pref) {
         switch (state) {
             case State::ACTIVE:
                 // Laptop is awake. No sleep.
-                if (shouldSleepNow) {
-                    logA("Transition: ACTIVE -> SLEEPPENDING (shouldSleepNow)");
-                    state = State::SLEEPPENDING;
-                    sleepInitiateTime = now + pref.lid_close_sleep_delay_time;
-                    break;
-                } else if (isLidClosedNow) {
-                    logA("Transition: ACTIVE -> LIDCLOSEDACTIVE (isLidClosedNow)");
-                    state = State::LIDCLOSEDACTIVE;
-                    lidCloseAlarmTime = now;
+                if (isLidClosedNow) {
+                    if (shouldSleepNow) {
+                        logA("Transition: ACTIVE -> SLEEPPENDING (shouldSleepNow)");
+                        state = State::SLEEPPENDING;
+                        sleepInitiateTime = now + pref.lid_close_sleep_delay_time;
+                    } else {
+                        logA("Transition: ACTIVE -> LIDCLOSEDACTIVE (isLidClosedNow)");
+                        state = State::LIDCLOSEDACTIVE;
+                        lidCloseAlarmTime = now;
+                    }
                     break;
                 }
                 return;
@@ -205,7 +188,6 @@ void timerLoop(HWND hWnd, preference &pref) {
             case State::LIDCLOSEDACTIVE:
                 // Lid closed, but active due to clamshell mode or caffeinate
                 // Throw alarm notification periodically
-                // TODO: don't trigger alarm on clamshell mode
                 if (shouldSleepNow) {
                     logA("Transition: LIDCLOSEDACTIVE -> SLEEPPENDING");
                     volumeRAII = nullptr;
@@ -218,15 +200,17 @@ void timerLoop(HWND hWnd, preference &pref) {
                     state = State::ACTIVE;
                     break;
                 } else {
-                    // Trigger alarm sound!
-                    if (now >= lidCloseAlarmTime) {
+                    if (isClamshell) {
+                        lidCloseAlarmTime = now;
+                        if (volumeRAII) volumeRAII = nullptr;
+                    } else if (now >= lidCloseAlarmTime) {
                         auto hInstance = (HINSTANCE) GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
 
                         // Set volume RAII so that the main speaker volumes up, even on mute.
                         volumeRAII = std::make_unique<VolumeRAII>(pref.lid_close_alert_volume / 100.0f);
                         PlaySound(MAKEINTRESOURCE(IDR_ALERT), hInstance, SND_RESOURCE | SND_ASYNC);
                         lidCloseAlarmEndTime = now + 1.5;
-                        lidCloseAlarmTime += 30 * 60;  // Next alarm should fire 30 minute later.
+                        lidCloseAlarmTime += 30 * 60; // Next alarm should fire 30 minute later.
                     }
 
                     if (volumeRAII && now >= lidCloseAlarmEndTime) {
@@ -241,4 +225,3 @@ void timerLoop(HWND hWnd, preference &pref) {
     // Failsafe to prevent infinite loop;
     logA("somemthing weird happened");
 }
-
