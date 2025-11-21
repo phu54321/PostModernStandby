@@ -25,8 +25,6 @@
 
 #define ID_MAIN_TIMER 0x301
 
-preference pref = load_pref();
-
 UINT WM_TASKBARCREATED = -1;
 
 void addTrayIcon(HINSTANCE hInstance, HWND hWnd) {
@@ -47,6 +45,33 @@ void deleteTrayIcon(HWND hWnd) {
     nid.hWnd = hWnd;
     nid.uID = TRAY_ICON_ID;
     Shell_NotifyIcon(NIM_DELETE, &nid);
+}
+
+preference pref = read_pref();
+
+void load_and_normalize_pref() {
+    pref = read_pref();
+    // rfind(s0, 0) == 0 means string starts with s0.
+    if (pref.main_monitor_name.rfind(R"(\\.\)", 0) == 0) {
+        MessageBoxA(nullptr, "Old format `main_monitor_name` found. Removing it.", "Info", MB_OK);
+        pref.main_monitor_name = "";
+    }
+
+    if (pref.main_monitor_name.empty()) {
+        auto currentMonitor = getMonitorNameIfOnlyOne();
+        if (!currentMonitor.empty()) {
+            pref.main_monitor_name = currentMonitor;
+            auto msg = "`main_monitor_name` set to current only monitor " + currentMonitor;
+            MessageBoxA(nullptr, msg.c_str(), "Info", MB_OK);
+        } else {
+            MessageBoxA(nullptr, "`main_monitor_name` not set but \n"
+                        " - Multiple monitors are connected, or...\n"
+                        " - No active monitors are connected,\n"
+                        "Lid detection / Clamshell detection will not work correctly."
+                        , "Error", MB_OK);
+        }
+    }
+    save_pref(pref);
 }
 
 bool ProcessSuspendResumeNotification(HWND rhWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -142,7 +167,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         }
 
         if (wmId == MENU_PREF_RELOAD_MESSAGE) {
-            pref = load_pref();
+            load_and_normalize_pref();
             return 0;
         }
     } else if (msg == WM_TIMER) {
@@ -199,28 +224,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
 
     MSG msg = {};
 
-    pref = load_pref();
-    // rfind(s0, 0) == 0 means string starts with s0.
-    if (pref.main_monitor_name.rfind(R"(\\.\)", 0) == 0) {
-        MessageBoxA(nullptr, "Old format `main_monitor_name` found. Removing it.", "Info", MB_OK);
-        pref.main_monitor_name = "";
-    }
-
-    if (pref.main_monitor_name.empty()) {
-        auto currentMonitor = getMonitorNameIfOnlyOne();
-        if (!currentMonitor.empty()) {
-            pref.main_monitor_name = currentMonitor;
-            auto msg = "`main_monitor_name` set to current only monitor " + currentMonitor;
-            MessageBoxA(nullptr, msg.c_str(), "Info", MB_OK);
-        } else {
-            MessageBoxA(nullptr, "`main_monitor_name` not set but \n"
-                        " - Multiple monitors are connected, or...\n"
-                        " - No active monitors are connected,\n"
-                        "Lid detection / Clamshell detection will not work correctly."
-                        , "Error", MB_OK);
-        }
-    }
-    save_pref(pref);
+    load_and_normalize_pref();
 
     while (GetMessage(&msg, nullptr, 0, 0)) {
         TranslateMessage(&msg);

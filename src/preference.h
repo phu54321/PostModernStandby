@@ -26,7 +26,7 @@ struct preference {
 
 tstring getPrefFilePath();
 
-preference load_pref();
+preference read_pref();
 
 json dump_pref(const preference &props);
 

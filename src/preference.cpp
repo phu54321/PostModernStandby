@@ -35,7 +35,7 @@ tstring getPrefFilePath() {
     return prefFilePath;
 }
 
-preference load_pref() {
+preference read_pref() {
     std::ifstream ifs(getPrefFilePath());
     preference pref;
     if (ifs.fail())
