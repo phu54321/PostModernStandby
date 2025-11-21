@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.5.0)
 project(PostModernStandby VERSION 0.1.0)
 
+set(CMAKE_CXX_STANDARD 20)
 add_executable(PostModernStandby WIN32
 		src/main.cpp
 		src/keepAliveApp.cpp
@@ -17,5 +18,5 @@ add_executable(PostModernStandby WIN32
 		src/utils/WASAPIUtils.cpp
 		src/timerLoop.cpp)
 
-target_link_libraries(PostModernStandby powrprof winmm runtimeobject)
+target_link_libraries(PostModernStandby powrprof winmm runtimeobject cfgmgr32 setupapi)
 set_property(TARGET PostModernStandby PROPERTY CXX_STANDARD 17)

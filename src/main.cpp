@@ -200,10 +200,24 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
     MSG msg = {};
 
     pref = load_pref();
+    // rfind(s0, 0) == 0 means string starts with s0.
+    if (pref.main_monitor_name.rfind(R"(\\.\)", 0) == 0) {
+        MessageBoxA(nullptr, "Old format `main_monitor_name` found. Removing it.", "Info", MB_OK);
+        pref.main_monitor_name = "";
+    }
+
     if (pref.main_monitor_name.empty()) {
         auto currentMonitor = getMonitorNameIfOnlyOne();
         if (!currentMonitor.empty()) {
             pref.main_monitor_name = currentMonitor;
+            auto msg = "`main_monitor_name` set to current only monitor " + currentMonitor;
+            MessageBoxA(nullptr, msg.c_str(), "Info", MB_OK);
+        } else {
+            MessageBoxA(nullptr, "`main_monitor_name` not set but \n"
+                        " - Multiple monitors are connected, or...\n"
+                        " - No active monitors are connected,\n"
+                        "Lid detection / Clamshell detection will not work correctly."
+                        , "Error", MB_OK);
         }
     }
     save_pref(pref);

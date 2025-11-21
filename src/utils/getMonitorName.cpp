@@ -1,26 +1,45 @@
 #include <Windows.h>
 #include <string>
 #include <vector>
+#include <setupapi.h>
+#include <devguid.h>
+#include <cfgmgr32.h>
 
 #include "debugLog.h"
 
-static BOOL CALLBACK MonitorEnumProc(HMONITOR hmonitor, HDC hdc, LPRECT lprect, LPARAM lparam) {
-    auto monitors = reinterpret_cast<std::vector<HMONITOR> *>(lparam);
-    monitors->push_back(hmonitor);
-    return TRUE;
-}
-
 std::vector<std::string> getMonitorNames() {
-    std::vector<HMONITOR> monitors;
-    EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, reinterpret_cast<LPARAM>(&monitors));
-    std::vector<std::string> monitorNames;
-    for (auto &monitor: monitors) {
-        MONITORINFOEX info;
-        info.cbSize = sizeof(info);
-        GetMonitorInfo(monitors[0], &info);
-        monitorNames.emplace_back(info.szDevice);
+    std::vector<std::string> paths;
+
+    // Get all monitor devices
+    HDEVINFO devInfo = SetupDiGetClassDevsW(
+        &GUID_DEVCLASS_MONITOR,
+        NULL,
+        NULL,
+        DIGCF_PRESENT // Only currently present devices
+    );
+
+    if (devInfo == INVALID_HANDLE_VALUE) {
+        return paths;
     }
-    return monitorNames;
+
+    SP_DEVINFO_DATA devInfoData;
+    devInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
+
+    for (DWORD i = 0; SetupDiEnumDeviceInfo(devInfo, i, &devInfoData); i++) {
+        // Get device instance ID
+        WCHAR deviceInstanceId[MAX_DEVICE_ID_LEN];
+        if (CM_Get_Device_IDW(devInfoData.DevInst, deviceInstanceId,
+                              MAX_DEVICE_ID_LEN, 0) == CR_SUCCESS) {
+            // Convert to narrow string
+            char narrowId[MAX_DEVICE_ID_LEN * 2];
+            WideCharToMultiByte(CP_UTF8, 0, deviceInstanceId, -1,
+                                narrowId, sizeof(narrowId), NULL, NULL);
+            paths.push_back(narrowId);
+        }
+    }
+
+    SetupDiDestroyDeviceInfoList(devInfo);
+    return paths;
 }
 
 std::string getMonitorNameIfOnlyOne() {
