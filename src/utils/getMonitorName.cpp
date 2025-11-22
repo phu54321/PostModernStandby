@@ -2,8 +2,10 @@
 #include <string>
 #include <vector>
 #include <setupapi.h>
+#include <initguid.h>
 #include <devguid.h>
 #include <cfgmgr32.h>
+#include <devpkey.h>
 
 #include "debugLog.h"
 
@@ -26,6 +28,18 @@ std::vector<std::string> getMonitorNames() {
     devInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
 
     for (DWORD i = 0; SetupDiEnumDeviceInfo(devInfo, i, &devInfoData); i++) {
+        DEVPROPTYPE propType;
+        DWORD propSize = 0;
+        CM_POWER_DATA powerData;
+
+        // Check the power state of the monitor.
+        // If the property can be read and the monitor is in D3 (off), skip it.
+        if (SetupDiGetDevicePropertyW(devInfo, &devInfoData, &DEVPKEY_Device_PowerData, &propType, (PBYTE)&powerData, sizeof(powerData), &propSize, 0) && propSize > 0) {
+            if (powerData.PD_MostRecentPowerState == PowerDeviceD3) {
+                continue;
+            }
+        }
+
         // Get device instance ID
         WCHAR deviceInstanceId[MAX_DEVICE_ID_LEN];
         if (CM_Get_Device_IDW(devInfoData.DevInst, deviceInstanceId,

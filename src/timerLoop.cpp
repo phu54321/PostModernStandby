@@ -29,13 +29,14 @@ bool checkUsingS0ix() {
     return isUsingS0ix;
 }
 
-bool checkClamshell(const preference &pref) {
+bool checkClamshell(bool isLidClosedNow, const preference &pref) {
     if (!pref.allow_clamshell_on_battery && isBattery()) return false;
 
     auto names = getMonitorNames();
     int nonMainMonitorCount = 0;
     for (const auto &n: names) {
         if (n == pref.main_monitor_name) {
+            if (isLidClosedNow) continue;
             return false;
         }
         nonMainMonitorCount++;
@@ -78,7 +79,7 @@ void timerLoop(HWND hWnd, preference &pref) {
     //  - etc.
     // so let's keep everything lazy evaluated.
     auto hasKeepAliveAppsLazy = lazy([&]() { return checkKeepAliveApps(pref); });
-    auto isClamshellLazy = lazy([&]() { return checkClamshell(pref); });
+    auto isClamshellLazy = lazy([&]() { return checkClamshell(isLidClosedNow, pref); });
     auto shouldSleepNowLazy = lazy([&]() {
         return isLidClosedNow && !isClamshellLazy.get() && !hasKeepAliveAppsLazy.get();
     });
