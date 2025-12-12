@@ -57,8 +57,8 @@ void load_and_normalize_pref() {
         pref.main_monitor_name = "";
     }
 
+    auto currentMonitor = getMonitorNameIfOnlyOne();
     if (pref.main_monitor_name.empty()) {
-        auto currentMonitor = getMonitorNameIfOnlyOne();
         if (!currentMonitor.empty()) {
             pref.main_monitor_name = currentMonitor;
             auto msg = "`main_monitor_name` set to current only monitor " + currentMonitor;
@@ -69,6 +69,12 @@ void load_and_normalize_pref() {
                         " - No active monitors are connected,\n"
                         "Lid detection / Clamshell detection will not work correctly."
                         , "Error", MB_OK);
+        }
+    } else {
+        if (!currentMonitor.empty() && pref.main_monitor_name != currentMonitor) {
+            MessageBoxA(
+                nullptr, "Display specified by main_monitor_name not currently in your device. Check the name again.",
+                "Warning", MB_OK);
         }
     }
     save_pref(pref);
