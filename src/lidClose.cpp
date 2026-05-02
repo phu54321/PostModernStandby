@@ -19,8 +19,8 @@ bool ProcessLidCloseEvent(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 _isLidClosed = (settings->Data[0] == 0);
                 logA("isLidClosed = %d", _isLidClosed);
             }
+            return true;
         }
-        return true;
     }
     return false;
 }
