@@ -8,3 +8,5 @@
 void turnOffRadio();
 
 void resumeRadio();
+
+bool failsafeRestoreRadioState();

@@ -11,8 +11,7 @@
 #include "utils/getMonitorName.h"
 
 #pragma comment(lib, "shlwapi.lib")
-
-static tstring getPrefFolder() {
+tstring getPrivateFolder() {
     TCHAR szPath[MAX_PATH];
     if (SHGetFolderPath(NULL, CSIDL_COMMON_APPDATA, NULL, 0, szPath) == 0) {
         PathAppend(szPath, TEXT("\\trgksoft\\PostModernStandby\\"));
@@ -23,7 +22,7 @@ static tstring getPrefFolder() {
 }
 
 tstring getPrefFilePath() {
-    auto prefFolder = getPrefFolder();
+    auto prefFolder = getPrivateFolder();
     {
         auto ret = SHCreateDirectoryEx(NULL, prefFolder.c_str(), NULL);
         if (ret != 0 && ret != ERROR_ALREADY_EXISTS) {

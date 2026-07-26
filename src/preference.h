@@ -24,6 +24,8 @@ struct preference {
     std::string main_monitor_name = getMonitorNameIfOnlyOne();
 };
 
+tstring getPrivateFolder();
+
 tstring getPrefFilePath();
 
 preference read_pref();

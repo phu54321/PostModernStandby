@@ -205,6 +205,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
     winrt::init_apartment();
     CoInitialize(nullptr);
 
+    // Recover a snapshot left behind by a crash or unexpected shutdown.
+    failsafeRestoreRadioState();
+
     WM_TASKBARCREATED = RegisterWindowMessageW(L"TaskbarCreated");
 
     WNDCLASS wndClass;
