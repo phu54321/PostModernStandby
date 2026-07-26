@@ -132,6 +132,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         SetTimer(hWnd, ID_MAIN_TIMER, 5000, nullptr);
         return 0;
     } else if (msg == WM_DESTROY) {
+        resumeRadio();
         deleteTrayIcon(hWnd);
         PostQuitMessage(0);
         return 0;
