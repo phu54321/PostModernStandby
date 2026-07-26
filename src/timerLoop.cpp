@@ -178,7 +178,7 @@ void timerLoop(HWND hWnd, preference &pref) {
                 } else {
                     if (isLidClosedNow) {
                         logA("Transition: SLEEP -> LIDCLOSEDACTIVE (isLidClosedNow)");
-                        if (pref.disable_bluetooth_on_sleep) {
+                        if (isRadioTurnedOffByApp()) {
                             logA(" - resuming bluetooth");
                             resumeRadio();
                         }
@@ -187,9 +187,7 @@ void timerLoop(HWND hWnd, preference &pref) {
                         break;
                     } else {
                         logA("Transition: SLEEP -> ACTIVE");
-                        if (pref.disable_bluetooth_on_sleep) {
-                            resumeRadio();
-                        }
+                        resumeRadio();
                         state = State::ACTIVE;
                         break;
                     }

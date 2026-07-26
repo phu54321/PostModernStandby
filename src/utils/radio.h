@@ -7,6 +7,8 @@
 
 void turnOffRadio();
 
+bool isRadioTurnedOffByApp();
+
 void resumeRadio();
 
 bool failsafeRestoreRadioState();

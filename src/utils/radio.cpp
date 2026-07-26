@@ -24,7 +24,7 @@ template <typename T>
 using IAsyncOperation = winrt::Windows::Foundation::IAsyncOperation<T>;
 
 std::map<hstring, RadioState> oldBluetoothStateMap;
-static bool g_isRadioTurnedOff = false;
+static bool g_isRadioTurnedOffByApp = false;
 
 static tstring getRadioStateFilePath() {
     auto folder = getPrivateFolder();
@@ -103,7 +103,7 @@ void removeBackupRadioState() {
 // ------------------------
 
 void turnOffRadio() {
-    if (g_isRadioTurnedOff) return;
+    if (g_isRadioTurnedOffByApp) return;
 
     std::vector<Radio> turnOffList;
     auto radioList = Radio::GetRadiosAsync().get();
@@ -138,11 +138,15 @@ void turnOffRadio() {
         op.get();
     }
 
-    g_isRadioTurnedOff = true;
+    g_isRadioTurnedOffByApp = true;
+}
+
+bool isRadioTurnedOffByApp() {
+    return g_isRadioTurnedOffByApp;
 }
 
 void resumeRadio() {
-    if (!g_isRadioTurnedOff) return;
+    if (!g_isRadioTurnedOffByApp) return;
 
     std::vector<IAsyncOperation<RadioAccessStatus>> ops;
     for (Radio radio: Radio::GetRadiosAsync().get()) {
@@ -161,5 +165,5 @@ void resumeRadio() {
         op.get();
     }
     removeBackupRadioState();
-    g_isRadioTurnedOff = false;
+    g_isRadioTurnedOffByApp = false;
 }
