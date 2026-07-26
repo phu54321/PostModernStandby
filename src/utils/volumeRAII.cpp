@@ -14,7 +14,8 @@ VolumeRAII::VolumeRAII(float newVolume) {
     auto outputDevice = getDefaultOutputDevice();
 
     IAudioEndpointVolume *raw_endpointVolume;
-    hr = outputDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, NULL,
+    hr = outputDevice->Activate(__uuidof(IAudioEndpointVolume),
+                                CLSCTX_INPROC_SERVER, NULL,
                                 reinterpret_cast<void **>(&raw_endpointVolume));
     if (FAILED(hr)) {
         logA("Cannot init IAudioEndpointVolume: %x", hr);

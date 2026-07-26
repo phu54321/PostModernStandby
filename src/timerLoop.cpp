@@ -16,27 +16,29 @@
 #include "res/resource.h"
 #include "utils/lazy.h"
 
-
 bool checkUsingS0ix() {
     static bool initialized = false;
     static bool isUsingS0ix;
 
     if (!initialized) {
         SYSTEM_POWER_CAPABILITIES spc = {0};
-        CallNtPowerInformation(SystemPowerCapabilities, NULL, 0, &spc, sizeof(spc));
+        CallNtPowerInformation(SystemPowerCapabilities, NULL, 0, &spc,
+                               sizeof(spc));
         isUsingS0ix = spc.AoAc;
     }
     return isUsingS0ix;
 }
 
 bool checkClamshell(bool isLidClosedNow, const preference &pref) {
-    if (!pref.allow_clamshell_on_battery && isBattery()) return false;
+    if (!pref.allow_clamshell_on_battery && isBattery())
+        return false;
 
     auto names = getMonitorNames();
     int nonMainMonitorCount = 0;
-    for (const auto &n: names) {
+    for (const auto &n : names) {
         if (n == pref.main_monitor_name) {
-            if (isLidClosedNow) continue;
+            if (isLidClosedNow)
+                continue;
             return false;
         }
         nonMainMonitorCount++;
@@ -44,15 +46,12 @@ bool checkClamshell(bool isLidClosedNow, const preference &pref) {
     return nonMainMonitorCount > 0;
 }
 
-
-double currentTime() {
-    return GetTickCount64() / 1000.0;
-}
+double currentTime() { return GetTickCount64() / 1000.0; }
 
 void sleepNow(const preference &pref, HWND hWnd) {
     if (checkUsingS0ix()) {
         logA("[sleepNow] S0ix sleep");
-        SendMessageA(hWnd, WM_SYSCOMMAND, SC_MONITORPOWER, (LPARAM) 2);
+        SendMessageA(hWnd, WM_SYSCOMMAND, SC_MONITORPOWER, (LPARAM)2);
     } else {
         logA("[sleepNow] S3/S4 sleep");
         SetSuspendState(FALSE, TRUE, FALSE);
@@ -60,13 +59,7 @@ void sleepNow(const preference &pref, HWND hWnd) {
 }
 
 // State
-enum class State {
-    ACTIVE,
-    LIDCLOSEDACTIVE,
-    SLEEPPENDING,
-    SLEEP
-};
-
+enum class State { ACTIVE, LIDCLOSEDACTIVE, SLEEPPENDING, SLEEP };
 
 void timerLoop(HWND hWnd, preference &pref) {
     static State state = State::ACTIVE;
@@ -78,10 +71,13 @@ void timerLoop(HWND hWnd, preference &pref) {
     //  - iterating monitors
     //  - etc.
     // so let's keep everything lazy evaluated.
-    auto hasKeepAliveAppsLazy = lazy([&]() { return checkKeepAliveApps(pref); });
-    auto isClamshellLazy = lazy([&]() { return checkClamshell(isLidClosedNow, pref); });
+    auto hasKeepAliveAppsLazy =
+        lazy([&]() { return checkKeepAliveApps(pref); });
+    auto isClamshellLazy =
+        lazy([&]() { return checkClamshell(isLidClosedNow, pref); });
     auto shouldSleepNowLazy = lazy([&]() {
-        return isLidClosedNow && !isClamshellLazy.get() && !hasKeepAliveAppsLazy.get();
+        return isLidClosedNow && !isClamshellLazy.get() &&
+               !hasKeepAliveAppsLazy.get();
     });
 
     double now = currentTime();
@@ -95,7 +91,8 @@ void timerLoop(HWND hWnd, preference &pref) {
     // LIDCLOSEDACTIVE
     static double lidCloseAlarmTime;
     static std::unique_ptr<VolumeRAII> volumeRAII = nullptr;
-    static double lidCloseAlarmEndTime; // Private variable. Only valid when `volumeRAII` is not NULL.
+    static double lidCloseAlarmEndTime; // Private variable. Only valid when
+                                        // `volumeRAII` is not NULL.
 
     // SLEEPPENDING
     static double sleepInitiateTime; // SLEEPPENDING & LIDCLOSEDSLEEP
@@ -107,128 +104,141 @@ void timerLoop(HWND hWnd, preference &pref) {
     int failSafeCounter = 0;
     while ((++failSafeCounter) < 5) {
         switch (state) {
-            case State::ACTIVE:
-                // Laptop is awake. No sleep.
-                if (isLidClosedNow) {
-                    if (shouldSleepNowLazy.get()) {
-                        logA("Transition: ACTIVE -> SLEEPPENDING (shouldSleepNow)");
-                        state = State::SLEEPPENDING;
-                        sleepInitiateTime = now + pref.lid_close_sleep_delay_time;
-                    } else {
-                        logA("Transition: ACTIVE -> LIDCLOSEDACTIVE (isLidClosedNow)");
-                        state = State::LIDCLOSEDACTIVE;
-                        lidCloseAlarmTime = now;
-                    }
-                    break;
-                }
-                return;
-
-            case State::SLEEPPENDING:
-                // Wait for 30 seconds before sleeping
+        case State::ACTIVE:
+            // Laptop is awake. No sleep.
+            if (isLidClosedNow) {
                 if (shouldSleepNowLazy.get()) {
-                    if (now >= sleepInitiateTime) {
-                        logA("Transition: SLEEPPENDING -> SLEEP (time elapsed) - now sleeping...");
-                        sleepInitiateTime = now + 300;
-                        lastTickTime = now;
-                        state = State::SLEEP;
-                        sleepNow(pref, hWnd);
-                        break;
-                    }
-                } else {
-                    if (isLidClosedNow) {
-                        logA("Transition: SLEEPPENDING -> LIDCLOSEDACTIVE");
-                        state = State::LIDCLOSEDACTIVE;
-                        lidCloseAlarmTime = now;
-                        break;
-                    } else {
-                        logA("Transition: SLEEPPENDING -> ACTIVE");
-                        state = State::ACTIVE;
-                        break;
-                    }
-                }
-                return;
-
-            case State::SLEEP:
-                // Initiate sleep & (if required) re-sleep when laptop wake.
-                if (shouldSleepNowLazy.get()) {
-                    // Tick in 180 seconds: timer loop was interrupted more than 3 minutes
-                    // This probably mean that the laptop was sleeping for at least 3 minutes
-                    // before running this loop again.
-
-                    // Since this application is legacy desktop application, after laptop paas
-                    // DAM (desktop activity moderator) phase, this code shouldn't really run.
-
-                    // In cases laptop wakes intermittently, Log that incidence & sleep again
-                    if (lastTickTime + 180 <= now) {
-                        // Check after 60 seconds
-                        logA("Woken up during sleep: triggering re-sleep after 60 secs");
-                        sleepInitiateTime = now + 60;
-                    }
-
-                    // Woke midwhile: sleep again
-                    if (now >= sleepInitiateTime) {
-                        // https://learn.microsoft.com/en-us/windows-hardware/design/device-experiences/modern-standby-states
-                        // Laptop might not be able to sleep quickly enough, so we give 5 more minutes before trying to sleep again.
-                        sleepInitiateTime = now + 300;
-                        logA("Woke mid-sleep: sleeping again...");
-                        sleepNow(pref, hWnd);
-                    }
-
-                    lastTickTime = now;
-                } else {
-                    if (isLidClosedNow) {
-                        logA("Transition: SLEEP -> LIDCLOSEDACTIVE (isLidClosedNow)");
-                        if (isRadioTurnedOffByApp()) {
-                            logA(" - resuming bluetooth");
-                            resumeRadio();
-                        }
-                        state = State::LIDCLOSEDACTIVE;
-                        lidCloseAlarmTime = now;
-                        break;
-                    } else {
-                        logA("Transition: SLEEP -> ACTIVE");
-                        resumeRadio();
-                        state = State::ACTIVE;
-                        break;
-                    }
-                }
-                return;
-
-            case State::LIDCLOSEDACTIVE:
-                // Lid closed, but active due to clamshell mode or caffeinate
-                // Throw alarm notification periodically if keepalive apps are on.
-                if (shouldSleepNowLazy.get()) {
-                    logA("Transition: LIDCLOSEDACTIVE -> SLEEPPENDING");
-                    volumeRAII = nullptr;
+                    logA("Transition: ACTIVE -> SLEEPPENDING (shouldSleepNow)");
                     state = State::SLEEPPENDING;
-                    sleepInitiateTime = now + 10;
+                    sleepInitiateTime = now + pref.lid_close_sleep_delay_time;
+                } else {
+                    logA("Transition: ACTIVE -> LIDCLOSEDACTIVE "
+                         "(isLidClosedNow)");
+                    state = State::LIDCLOSEDACTIVE;
+                    lidCloseAlarmTime = now;
+                }
+                break;
+            }
+            return;
+
+        case State::SLEEPPENDING:
+            // Wait for 30 seconds before sleeping
+            if (shouldSleepNowLazy.get()) {
+                if (now >= sleepInitiateTime) {
+                    logA("Transition: SLEEPPENDING -> SLEEP (time elapsed) - "
+                         "now sleeping...");
+                    sleepInitiateTime = now + 300;
+                    lastTickTime = now;
+                    state = State::SLEEP;
+                    sleepNow(pref, hWnd);
                     break;
-                } else if (!isLidClosedNow) {
-                    logA("Transition: LIDCLOSEDACTIVE -> ACTIVE");
-                    volumeRAII = nullptr;
+                }
+            } else {
+                if (isLidClosedNow) {
+                    logA("Transition: SLEEPPENDING -> LIDCLOSEDACTIVE");
+                    state = State::LIDCLOSEDACTIVE;
+                    lidCloseAlarmTime = now;
+                    break;
+                } else {
+                    logA("Transition: SLEEPPENDING -> ACTIVE");
                     state = State::ACTIVE;
                     break;
-                } else {
-                    // Don't throw alarm on clamshell mode.
-                    if (isClamshellLazy.get()) {
-                        lidCloseAlarmTime = now;
-                        if (volumeRAII) volumeRAII = nullptr;
-                    } else if (now >= lidCloseAlarmTime) {
-                        auto hInstance = (HINSTANCE) GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
-
-                        // Set volume RAII so that the main speaker volumes up, even on mute.
-                        volumeRAII = std::make_unique<VolumeRAII>(pref.lid_close_alert_volume / 100.0f);
-                        PlaySound(MAKEINTRESOURCE(IDR_ALERT), hInstance, SND_RESOURCE | SND_ASYNC);
-                        lidCloseAlarmEndTime = now + 1.5;
-                        lidCloseAlarmTime += 30 * 60; // Next alarm should fire 30 minute later.
-                    }
-
-                    if (volumeRAII && now >= lidCloseAlarmEndTime) {
-                        logA("Unset volumeRAII");
-                        volumeRAII = nullptr;
-                    }
                 }
-                return;
+            }
+            return;
+
+        case State::SLEEP:
+            // Initiate sleep & (if required) re-sleep when laptop wake.
+            if (shouldSleepNowLazy.get()) {
+                // Tick in 180 seconds: timer loop was interrupted more than 3
+                // minutes This probably mean that the laptop was sleeping for
+                // at least 3 minutes before running this loop again.
+
+                // Since this application is legacy desktop application, after
+                // laptop paas DAM (desktop activity moderator) phase, this code
+                // shouldn't really run.
+
+                // In cases laptop wakes intermittently, Log that incidence &
+                // sleep again
+                if (lastTickTime + 180 <= now) {
+                    // Check after 60 seconds
+                    logA("Woken up during sleep: triggering re-sleep after 60 "
+                         "secs");
+                    sleepInitiateTime = now + 60;
+                }
+
+                // Woke midwhile: sleep again
+                if (now >= sleepInitiateTime) {
+                    // https://learn.microsoft.com/en-us/windows-hardware/design/device-experiences/modern-standby-states
+                    // Laptop might not be able to sleep quickly enough, so we
+                    // give 5 more minutes before trying to sleep again.
+                    sleepInitiateTime = now + 300;
+                    logA("Woke mid-sleep: sleeping again...");
+                    sleepNow(pref, hWnd);
+                }
+
+                lastTickTime = now;
+            } else {
+                if (isLidClosedNow) {
+                    logA("Transition: SLEEP -> LIDCLOSEDACTIVE "
+                         "(isLidClosedNow)");
+                    if (isRadioTurnedOffByApp()) {
+                        logA(" - resuming bluetooth");
+                        resumeRadio();
+                    }
+                    state = State::LIDCLOSEDACTIVE;
+                    lidCloseAlarmTime = now;
+                    break;
+                } else {
+                    logA("Transition: SLEEP -> ACTIVE");
+                    resumeRadio();
+                    state = State::ACTIVE;
+                    break;
+                }
+            }
+            return;
+
+        case State::LIDCLOSEDACTIVE:
+            // Lid closed, but active due to clamshell mode or caffeinate
+            // Throw alarm notification periodically if keepalive apps are on.
+            if (shouldSleepNowLazy.get()) {
+                logA("Transition: LIDCLOSEDACTIVE -> SLEEPPENDING");
+                volumeRAII = nullptr;
+                state = State::SLEEPPENDING;
+                sleepInitiateTime = now + 10;
+                break;
+            } else if (!isLidClosedNow) {
+                logA("Transition: LIDCLOSEDACTIVE -> ACTIVE");
+                volumeRAII = nullptr;
+                state = State::ACTIVE;
+                break;
+            } else {
+                // Don't throw alarm on clamshell mode.
+                if (isClamshellLazy.get()) {
+                    lidCloseAlarmTime = now;
+                    if (volumeRAII)
+                        volumeRAII = nullptr;
+                } else if (now >= lidCloseAlarmTime) {
+                    auto hInstance =
+                        (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
+
+                    // Set volume RAII so that the main speaker volumes up, even
+                    // on mute.
+                    volumeRAII = std::make_unique<VolumeRAII>(
+                        pref.lid_close_alert_volume / 100.0f);
+                    PlaySound(MAKEINTRESOURCE(IDR_ALERT), hInstance,
+                              SND_RESOURCE | SND_ASYNC);
+                    lidCloseAlarmEndTime = now + 1.5;
+                    lidCloseAlarmTime +=
+                        30 * 60; // Next alarm should fire 30 minute later.
+                }
+
+                if (volumeRAII && now >= lidCloseAlarmEndTime) {
+                    logA("Unset volumeRAII");
+                    volumeRAII = nullptr;
+                }
+            }
+            return;
         }
     }
 

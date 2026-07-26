@@ -9,17 +9,17 @@
 #include <memory>
 #include <Windows.h>
 
-template<typename T>
-auto make_autorelease(T *ptr) {
+template <typename T> auto make_autorelease(T *ptr) {
     return std::shared_ptr<T>(ptr, [](T *p) {
-        if (p) p->Release();
+        if (p)
+            p->Release();
     });
 }
 
-template<typename T>
-auto make_autoclose(T *h) {
+template <typename T> auto make_autoclose(T *h) {
     return std::shared_ptr<T>(h, [](T *h) {
-        if (h) CloseHandle(h);
+        if (h)
+            CloseHandle(h);
     });
 }
 

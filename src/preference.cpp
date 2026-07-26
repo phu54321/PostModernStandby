@@ -40,13 +40,12 @@ preference read_pref() {
     if (ifs.fail())
         return pref;
 
-#define json_get_pref_required(pref_name) \
+#define json_get_pref_required(pref_name)                                      \
     pref.pref_name = data[#pref_name]; /* Error if no such pref */
 
-#define json_get_pref_optional(pref_name) \
-    if (data.contains(#pref_name))          \
-    { /* Ignore if no such pref */          \
-        pref.pref_name = data[#pref_name];    \
+#define json_get_pref_optional(pref_name)                                      \
+    if (data.contains(#pref_name)) { /* Ignore if no such pref */              \
+        pref.pref_name = data[#pref_name];                                     \
     }
 
     try {
@@ -59,9 +58,9 @@ preference read_pref() {
         json_get_pref_optional(disable_bluetooth_on_sleep);
         logA("Loaded preference: %s", dump_pref(pref).dump(2).c_str());
         return pref;
-    }
-    catch (json::exception e) {
-        MessageBoxA(nullptr, e.what(), "PostModernStandby: preference parse error", MB_OK);
+    } catch (json::exception e) {
+        MessageBoxA(nullptr, e.what(),
+                    "PostModernStandby: preference parse error", MB_OK);
         preference pref;
         return pref;
     }
@@ -69,12 +68,12 @@ preference read_pref() {
 
 json dump_pref(const preference &props) {
     return json{
-            {"allow_clamshell_on_battery", props.allow_clamshell_on_battery},
-            {"disable_bluetooth_on_sleep", props.disable_bluetooth_on_sleep},
-            {"lid_close_alert_volume",     props.lid_close_alert_volume},
-            {"lid_close_sleep_delay_time", props.lid_close_sleep_delay_time},
-            {"main_monitor_name",          props.main_monitor_name},
-            {"sleep_preventing_apps",      props.sleep_preventing_apps},
+        {"allow_clamshell_on_battery", props.allow_clamshell_on_battery},
+        {"disable_bluetooth_on_sleep", props.disable_bluetooth_on_sleep},
+        {"lid_close_alert_volume", props.lid_close_alert_volume},
+        {"lid_close_sleep_delay_time", props.lid_close_sleep_delay_time},
+        {"main_monitor_name", props.main_monitor_name},
+        {"sleep_preventing_apps", props.sleep_preventing_apps},
     };
 }
 

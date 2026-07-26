@@ -12,19 +12,20 @@
 const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);
 const IID IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
 
-bool iterateAudioEndPoints(const std::function<bool(IMMDevicePtr pMMDevice)> &cb) {
+bool iterateAudioEndPoints(
+    const std::function<bool(IMMDevicePtr pMMDevice)> &cb) {
     IMMDeviceEnumerator *pEnumerator_ = nullptr;
-    HRESULT hr = CoCreateInstance(
-            CLSID_MMDeviceEnumerator, nullptr,
-            CLSCTX_ALL, IID_IMMDeviceEnumerator,
-            (void **) &pEnumerator_);
+    HRESULT hr =
+        CoCreateInstance(CLSID_MMDeviceEnumerator, nullptr, CLSCTX_ALL,
+                         IID_IMMDeviceEnumerator, (void **)&pEnumerator_);
     if (FAILED(hr))
         return false;
 
     auto pEnumerator = make_autorelease(pEnumerator_);
 
     IMMDeviceCollection *pMMDeviceCollection_ = nullptr;
-    hr = pEnumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &pMMDeviceCollection_);
+    hr = pEnumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE,
+                                         &pMMDeviceCollection_);
     if (FAILED(hr))
         return false;
     auto pMMDeviceCollection = make_autorelease(pMMDeviceCollection_);
@@ -50,16 +51,16 @@ bool iterateAudioEndPoints(const std::function<bool(IMMDevicePtr pMMDevice)> &cb
 IMMDevicePtr getDefaultOutputDevice() {
     IMMDeviceEnumerator *pEnumerator_ = nullptr;
 
-    HRESULT hr = CoCreateInstance(
-            CLSID_MMDeviceEnumerator, nullptr,
-            CLSCTX_ALL, IID_IMMDeviceEnumerator,
-            (void **) &pEnumerator_);
+    HRESULT hr =
+        CoCreateInstance(CLSID_MMDeviceEnumerator, nullptr, CLSCTX_ALL,
+                         IID_IMMDeviceEnumerator, (void **)&pEnumerator_);
     if (FAILED(hr))
         return nullptr;
 
     auto pEnumerator = make_autorelease(pEnumerator_);
     IMMDevice *device;
-    hr = pEnumerator_->GetDefaultAudioEndpoint(EDataFlow::eRender, ERole::eConsole, &device);
+    hr = pEnumerator_->GetDefaultAudioEndpoint(EDataFlow::eRender,
+                                               ERole::eConsole, &device);
     if (FAILED(hr))
         return nullptr;
 

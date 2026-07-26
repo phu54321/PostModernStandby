@@ -20,7 +20,7 @@ static std::wstring getLogPath() {
     return path;
 }
 
-static const char* logPrefix = "[PostModernStandby] ";
+static const char *logPrefix = "[PostModernStandby] ";
 static const int logPrefixLen = strlen(logPrefix);
 
 void logA(const char *format, ...) {
@@ -28,9 +28,9 @@ void logA(const char *format, ...) {
     strncpy(buf, logPrefix, 1023);
 
     va_list args;
-            va_start(args, format);
+    va_start(args, format);
     vsnprintf(buf + logPrefixLen, 1024 - logPrefixLen, format, args);
-            va_end(args);
+    va_end(args);
 
     OutputDebugStringA(buf);
 
@@ -39,6 +39,7 @@ void logA(const char *format, ...) {
         auto t = std::time(nullptr);
         auto tm = *std::localtime(&t);
         std::fstream of(logPath, std::ios_base::app);
-        of << std::put_time(&tm, "[%d-%m-%Y %H-%M-%S] ") << (buf + logPrefixLen) << std::endl;
+        of << std::put_time(&tm, "[%d-%m-%Y %H-%M-%S] ") << (buf + logPrefixLen)
+           << std::endl;
     }
 }

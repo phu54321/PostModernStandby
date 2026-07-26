@@ -37,17 +37,17 @@ static tstring getRadioStateFilePath() {
 
 static bool backupRadioStates() {
     nlohmann::json data = nlohmann::json::object();
-    for (const auto &[name, state]: oldBluetoothStateMap) {
+    for (const auto &[name, state] : oldBluetoothStateMap) {
         data[to_string(name)] = static_cast<int>(state);
     }
 
     std::ofstream ofs(getRadioStateFilePath(), std::ios::trunc);
-    if (ofs.fail()) return false;
+    if (ofs.fail())
+        return false;
     ofs << data.dump(2);
     ofs.flush();
     return !ofs.fail();
 }
-
 
 bool failsafeRestoreRadioState() {
     auto path = getRadioStateFilePath();
@@ -60,10 +60,8 @@ bool failsafeRestoreRadioState() {
     try {
         data = nlohmann::json::parse(ifs);
     } catch (const nlohmann::json::exception &e) {
-        MessageBoxA(NULL,
-            e.what(),
-            "Cannot restore saved Bluetooth state",
-            MB_OK | MB_ICONWARNING);
+        MessageBoxA(NULL, e.what(), "Cannot restore saved Bluetooth state",
+                    MB_OK | MB_ICONWARNING);
 
         DeleteFile(path.c_str());
         return false;
@@ -73,18 +71,21 @@ bool failsafeRestoreRadioState() {
     // but I guess that's too edge case to fix right now.
     // Just check against current list of available radios on failsafe restore.
     std::vector<IAsyncOperation<RadioAccessStatus>> ops;
-    for (Radio radio: Radio::GetRadiosAsync().get()) {
-        if (radio.Kind() != RadioKind::Bluetooth) continue;
+    for (Radio radio : Radio::GetRadiosAsync().get()) {
+        if (radio.Kind() != RadioKind::Bluetooth)
+            continue;
 
         auto name = to_string(radio.Name());
-        if (!data.contains(name)) continue;
+        if (!data.contains(name))
+            continue;
 
         auto savedState = static_cast<RadioState>(data[name].get<int>());
         ops.push_back(radio.SetStateAsync(savedState));
-        logA(" - Failsafe restoring %s to %d", name.c_str(), static_cast<int>(savedState));
+        logA(" - Failsafe restoring %s to %d", name.c_str(),
+             static_cast<int>(savedState));
     }
 
-    for (auto &&op: ops) {
+    for (auto &&op : ops) {
         op.get();
     }
 
@@ -96,18 +97,20 @@ void removeBackupRadioState() {
     auto path = getRadioStateFilePath();
 
     // we don't care if the file exists or not.
-    // it will not exist after this function exits. that's the only thing required.
+    // it will not exist after this function exits. that's the only thing
+    // required.
     DeleteFile(path.c_str());
 }
 
 // ------------------------
 
 void turnOffRadio() {
-    if (g_isRadioTurnedOffByApp) return;
+    if (g_isRadioTurnedOffByApp)
+        return;
 
     std::vector<Radio> turnOffList;
     auto radioList = Radio::GetRadiosAsync().get();
-    for (Radio radio: radioList) {
+    for (Radio radio : radioList) {
         if (radio.Kind() == RadioKind::Bluetooth) {
             auto it = oldBluetoothStateMap.find(radio.Name());
             if (it == oldBluetoothStateMap.end()) {
@@ -119,49 +122,47 @@ void turnOffRadio() {
     }
 
     if (!backupRadioStates()) {
-        MessageBoxW(
-            nullptr,
-             L"Cannot backup radio states",
-             L"PostModernStandby Error",
-             MB_OK | MB_ICONWARNING);
+        MessageBoxW(nullptr, L"Cannot backup radio states",
+                    L"PostModernStandby Error", MB_OK | MB_ICONWARNING);
     }
 
     // wait all SetStateAsync to complete
     std::vector<IAsyncOperation<RadioAccessStatus>> ops;
-    for (Radio& radio: turnOffList) {
+    for (Radio &radio : turnOffList) {
         auto oldState = oldBluetoothStateMap[radio.Name()];
         ops.push_back(radio.SetStateAsync(RadioState::Off));
-        logA(" - %s: %d -> Off(2)", to_string(radio.Name()).c_str(), static_cast<int>(oldState));
+        logA(" - %s: %d -> Off(2)", to_string(radio.Name()).c_str(),
+             static_cast<int>(oldState));
     }
 
-    for (auto &&op: ops) {
+    for (auto &&op : ops) {
         op.get();
     }
 
     g_isRadioTurnedOffByApp = true;
 }
 
-bool isRadioTurnedOffByApp() {
-    return g_isRadioTurnedOffByApp;
-}
+bool isRadioTurnedOffByApp() { return g_isRadioTurnedOffByApp; }
 
 void resumeRadio() {
-    if (!g_isRadioTurnedOffByApp) return;
+    if (!g_isRadioTurnedOffByApp)
+        return;
 
     std::vector<IAsyncOperation<RadioAccessStatus>> ops;
-    for (Radio radio: Radio::GetRadiosAsync().get()) {
+    for (Radio radio : Radio::GetRadiosAsync().get()) {
         if (radio.Kind() == RadioKind::Bluetooth) {
             auto it = oldBluetoothStateMap.find(radio.Name());
             if (it != oldBluetoothStateMap.end()) {
                 auto newState = it->second;
                 ops.push_back(radio.SetStateAsync(newState));
                 oldBluetoothStateMap.erase(it);
-                logA(" - %s: Off(2) -> %d", to_string(radio.Name()).c_str(), static_cast<int>(newState));
+                logA(" - %s: Off(2) -> %d", to_string(radio.Name()).c_str(),
+                     static_cast<int>(newState));
             }
         }
     }
     // wait all SetStateAsync to complete
-    for (auto &&op: ops) {
+    for (auto &&op : ops) {
         op.get();
     }
     removeBackupRadioState();

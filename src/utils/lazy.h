@@ -14,12 +14,9 @@
 //  auto lazyExpr = lazy([]() { return 1 + 2; });
 //
 
-
-template<class F>
-class Lazy {
-public:
-    explicit Lazy(F f) : func(std::move(f)) {
-    }
+template <class F> class Lazy {
+  public:
+    explicit Lazy(F f) : func(std::move(f)) {}
 
     auto get() {
         if (!value.has_value()) {
@@ -28,14 +25,11 @@ public:
         return *value;
     }
 
-private:
+  private:
     F func;
     std::optional<decltype(func())> value;
 };
 
-template<class F>
-auto lazy(F f) {
-    return Lazy<F>(std::move(f));
-}
+template <class F> auto lazy(F f) { return Lazy<F>(std::move(f)); }
 
-#endif //POSTMODERNSTANDBY_LAZY_H
+#endif // POSTMODERNSTANDBY_LAZY_H

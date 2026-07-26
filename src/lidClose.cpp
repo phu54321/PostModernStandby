@@ -11,7 +11,8 @@ bool ProcessLidCloseEvent(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             auto settings = reinterpret_cast<POWERBROADCAST_SETTING *>(lParam);
             auto powerSetting = settings->PowerSetting;
             auto dataLength = settings->DataLength;
-            if (dataLength == 0);
+            if (dataLength == 0)
+                ;
             else if (powerSetting == GUID_ACDC_POWER_SOURCE) {
                 _isBattery = (settings->Data[0] == 1);
                 logA("isBattery = %d", _isBattery);
@@ -25,13 +26,9 @@ bool ProcessLidCloseEvent(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     return false;
 }
 
-bool isLidClosed() {
-    return _isLidClosed;
-}
+bool isLidClosed() { return _isLidClosed; }
 
-bool isBattery() {
-    return _isBattery;
-}
+bool isBattery() { return _isBattery; }
 
 void registerPowerSuspendNotificationReceiver(HWND hWnd) {
     RegisterPowerSettingNotification(hWnd, &GUID_ACDC_POWER_SOURCE, 0);

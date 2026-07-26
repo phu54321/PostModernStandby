@@ -13,12 +13,10 @@ std::vector<std::string> getMonitorNames() {
     std::vector<std::string> paths;
 
     // Get all monitor devices
-    HDEVINFO devInfo = SetupDiGetClassDevsW(
-        &GUID_DEVCLASS_MONITOR,
-        NULL,
-        NULL,
-        DIGCF_PRESENT // Only currently present devices
-    );
+    HDEVINFO devInfo =
+        SetupDiGetClassDevsW(&GUID_DEVCLASS_MONITOR, NULL, NULL,
+                             DIGCF_PRESENT // Only currently present devices
+        );
 
     if (devInfo == INVALID_HANDLE_VALUE) {
         return paths;
@@ -34,7 +32,10 @@ std::vector<std::string> getMonitorNames() {
 
         // Check the power state of the monitor.
         // If the property can be read and the monitor is in D3 (off), skip it.
-        if (SetupDiGetDevicePropertyW(devInfo, &devInfoData, &DEVPKEY_Device_PowerData, &propType, (PBYTE)&powerData, sizeof(powerData), &propSize, 0) && propSize > 0) {
+        if (SetupDiGetDevicePropertyW(
+                devInfo, &devInfoData, &DEVPKEY_Device_PowerData, &propType,
+                (PBYTE)&powerData, sizeof(powerData), &propSize, 0) &&
+            propSize > 0) {
             if (powerData.PD_MostRecentPowerState == PowerDeviceD3) {
                 continue;
             }
@@ -46,8 +47,8 @@ std::vector<std::string> getMonitorNames() {
                               MAX_DEVICE_ID_LEN, 0) == CR_SUCCESS) {
             // Convert to narrow string
             char narrowId[MAX_DEVICE_ID_LEN * 2];
-            WideCharToMultiByte(CP_UTF8, 0, deviceInstanceId, -1,
-                                narrowId, sizeof(narrowId), NULL, NULL);
+            WideCharToMultiByte(CP_UTF8, 0, deviceInstanceId, -1, narrowId,
+                                sizeof(narrowId), NULL, NULL);
             paths.push_back(narrowId);
         }
     }
@@ -58,6 +59,7 @@ std::vector<std::string> getMonitorNames() {
 
 std::string getMonitorNameIfOnlyOne() {
     auto monitorNames = getMonitorNames();
-    if (monitorNames.size() == 1) return monitorNames[0];
+    if (monitorNames.size() == 1)
+        return monitorNames[0];
     return "";
 }

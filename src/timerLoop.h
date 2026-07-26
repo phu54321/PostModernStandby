@@ -9,4 +9,4 @@
 
 void timerLoop(HWND hWnd, preference &pref);
 
-#endif //POSTMODERNSTANDBY_TIMERLOOP_H
+#endif // POSTMODERNSTANDBY_TIMERLOOP_H

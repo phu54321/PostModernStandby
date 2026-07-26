@@ -53,7 +53,9 @@ void load_and_normalize_pref() {
     pref = read_pref();
     // rfind(s0, 0) == 0 means string starts with s0.
     if (pref.main_monitor_name.rfind(R"(\\.\)", 0) == 0) {
-        MessageBoxA(nullptr, "Old format `main_monitor_name` found. Removing it.", "Info", MB_OK);
+        MessageBoxA(nullptr,
+                    "Old format `main_monitor_name` found. Removing it.",
+                    "Info", MB_OK);
         pref.main_monitor_name = "";
     }
 
@@ -61,53 +63,59 @@ void load_and_normalize_pref() {
     if (pref.main_monitor_name.empty()) {
         if (!currentMonitor.empty()) {
             pref.main_monitor_name = currentMonitor;
-            auto msg = "`main_monitor_name` set to current only monitor " + currentMonitor;
+            auto msg = "`main_monitor_name` set to current only monitor " +
+                       currentMonitor;
             MessageBoxA(nullptr, msg.c_str(), "Info", MB_OK);
         } else {
-            MessageBoxA(nullptr, "`main_monitor_name` not set but \n"
-                        " - Multiple monitors are connected, or...\n"
-                        " - No active monitors are connected,\n"
-                        "Lid detection / Clamshell detection will not work correctly."
-                        , "Error", MB_OK);
+            MessageBoxA(
+                nullptr,
+                "`main_monitor_name` not set but \n"
+                " - Multiple monitors are connected, or...\n"
+                " - No active monitors are connected,\n"
+                "Lid detection / Clamshell detection will not work correctly.",
+                "Error", MB_OK);
         }
     } else {
-        if (!currentMonitor.empty() && pref.main_monitor_name != currentMonitor) {
-            MessageBoxA(
-                nullptr, "Display specified by main_monitor_name not currently in your device. Check the name again.",
-                "Warning", MB_OK);
+        if (!currentMonitor.empty() &&
+            pref.main_monitor_name != currentMonitor) {
+            MessageBoxA(nullptr,
+                        "Display specified by main_monitor_name not currently "
+                        "in your device. Check the name again.",
+                        "Warning", MB_OK);
         }
     }
     save_pref(pref);
 }
 
-bool ProcessSuspendResumeNotification(HWND rhWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+bool ProcessSuspendResumeNotification(HWND rhWnd, UINT msg, WPARAM wParam,
+                                      LPARAM lParam) {
     if (msg == WM_POWERBROADCAST) {
         switch (wParam) {
-            case PBT_APMSUSPEND: {
-                if (pref.disable_bluetooth_on_sleep) {
-                    logA("[PBT_APMSUSPEND] Turning bluetooth OFF...");
-                    turnOffRadio();
-                }
-                return true;
+        case PBT_APMSUSPEND: {
+            if (pref.disable_bluetooth_on_sleep) {
+                logA("[PBT_APMSUSPEND] Turning bluetooth OFF...");
+                turnOffRadio();
             }
+            return true;
+        }
 
-            case PBT_APMRESUMESUSPEND: {
-                if (isRadioTurnedOffByApp()) {
-                    logA("[PBT_APMRESUMESUSPEND] Resuming bluetooth...");
-                    resumeRadio();
-                }
-                return true;
+        case PBT_APMRESUMESUSPEND: {
+            if (isRadioTurnedOffByApp()) {
+                logA("[PBT_APMRESUMESUSPEND] Resuming bluetooth...");
+                resumeRadio();
             }
+            return true;
+        }
 
-            case PBT_APMRESUMECRITICAL: {
-                if (isRadioTurnedOffByApp()) {
-                    logA("[PBT_APMRESUMECRITICAL] Resuming bluetooth...");
-                    resumeRadio();
-                }
-                return true;
+        case PBT_APMRESUMECRITICAL: {
+            if (isRadioTurnedOffByApp()) {
+                logA("[PBT_APMRESUMECRITICAL] Resuming bluetooth...");
+                resumeRadio();
             }
+            return true;
+        }
 
-            default:;
+        default:;
         }
     }
     return false;
@@ -121,11 +129,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         return TRUE;
 
     if (msg == WM_TASKBARCREATED) {
-        auto hInstance = (HINSTANCE) GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
+        auto hInstance = (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
         addTrayIcon(hInstance, hWnd);
         return 0;
     } else if (msg == WM_CREATE) {
-        auto hInstance = (HINSTANCE) GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
+        auto hInstance = (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
         registerPowerSuspendNotificationReceiver(hWnd);
         addTrayIcon(hInstance, hWnd);
 
@@ -139,18 +147,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     } else if (msg == TRAY_NOTIFY) {
         if (wParam == TRAY_ICON_ID && lParam == WM_RBUTTONUP) {
             auto hMenu = CreateMenu();
-            AppendMenu(hMenu, MF_STRING, MENU_PREF_EDIT_MESSAGE, TEXT("Edit preference"));
-            AppendMenu(hMenu, MF_STRING, MENU_PREF_RELOAD_MESSAGE, TEXT("Reload preference"));
+            AppendMenu(hMenu, MF_STRING, MENU_PREF_EDIT_MESSAGE,
+                       TEXT("Edit preference"));
+            AppendMenu(hMenu, MF_STRING, MENU_PREF_RELOAD_MESSAGE,
+                       TEXT("Reload preference"));
             AppendMenu(hMenu, MF_STRING, MENU_QUIT_MESSAGE, TEXT("Quit"));
 
             auto hMenubar = CreateMenu();
-            AppendMenu(hMenubar, MF_POPUP, (UINT_PTR) hMenu, TEXT("Menu"));
+            AppendMenu(hMenubar, MF_POPUP, (UINT_PTR)hMenu, TEXT("Menu"));
 
             auto hPopupMenu = GetSubMenu(hMenubar, 0);
             POINT pt;
             GetCursorPos(&pt);
             SetForegroundWindow(hWnd);
-            TrackPopupMenu(hPopupMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON, pt.x, pt.y, 0, hWnd, nullptr);
+            TrackPopupMenu(hPopupMenu,
+                           TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON,
+                           pt.x, pt.y, 0, hWnd, nullptr);
             SetForegroundWindow(hWnd);
             PostMessage(hWnd, WM_NULL, 0, 0);
 
@@ -169,7 +181,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         }
 
         if (wmId == MENU_PREF_EDIT_MESSAGE) {
-            ShellExecute(hWnd, nullptr, getPrefFilePath().c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+            ShellExecute(hWnd, nullptr, getPrefFilePath().c_str(), nullptr,
+                         nullptr, SW_SHOWNORMAL);
             return 0;
         }
 
@@ -188,17 +201,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 ///
 
-int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow) {
-  SetProcessDPIAware();
+int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+                     PSTR lpCmdLine, INT nCmdShow) {
+    SetProcessDPIAware();
 
-  if (!EnableNTPrivilege(SE_SHUTDOWN_NAME, SE_PRIVILEGE_ENABLED)) {
-        MessageBox(nullptr, TEXT("No suspend permission."), TEXT("Error"), MB_OK);
+    if (!EnableNTPrivilege(SE_SHUTDOWN_NAME, SE_PRIVILEGE_ENABLED)) {
+        MessageBox(nullptr, TEXT("No suspend permission."), TEXT("Error"),
+                   MB_OK);
         return 2;
     }
 
     auto mutex = CreateMutex(nullptr, TRUE, TEXT("Global\\PostModernStandby"));
     if (!mutex || GetLastError()) {
-        MessageBox(nullptr, TEXT("Another instance already running."), TEXT("Error"), MB_OK);
+        MessageBox(nullptr, TEXT("Another instance already running."),
+                   TEXT("Error"), MB_OK);
         return 0;
     }
 
@@ -218,16 +234,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
     RegisterClass(&wndClass);
 
     HWND hWnd = CreateWindowEx(
-            WS_EX_LEFT,
-            TEXT("PostModernStandby"),
-            TEXT("PostModernStandby"),
-            0,
-            0, 0,
-            CW_USEDEFAULT, CW_USEDEFAULT,
-            nullptr,
-            nullptr,
-            hInstance,
-            nullptr);
+        WS_EX_LEFT, TEXT("PostModernStandby"), TEXT("PostModernStandby"), 0, 0,
+        0, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, hInstance, nullptr);
 
     if (!hWnd) {
         MessageBox(nullptr, TEXT("Cannot create window"), TEXT("Error"), MB_OK);

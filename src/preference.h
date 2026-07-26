@@ -18,9 +18,7 @@ struct preference {
     int lid_close_alert_volume = 100;
     bool disable_bluetooth_on_sleep = false;
     std::set<std::string> sleep_preventing_apps = {
-            "caffeine.exe",
-            "caffeine32.exe",
-            "caffeine64.exe"};
+        "caffeine.exe", "caffeine32.exe", "caffeine64.exe"};
     std::string main_monitor_name = getMonitorNameIfOnlyOne();
 };
 

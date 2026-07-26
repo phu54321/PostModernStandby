@@ -10,12 +10,12 @@
 #include <memory>
 
 class VolumeRAII {
-public:
+  public:
     VolumeRAII(float newVolume);
 
     ~VolumeRAII();
 
-private:
+  private:
     std::shared_ptr<IAudioEndpointVolume> _endpointVolume = nullptr;
     float _oldVolume;
     BOOL _oldMute;

@@ -28,7 +28,8 @@ bool checkKeepAliveApps(const preference &pref) {
     hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPALL, 0);
     pEntry.dwSize = sizeof(pEntry);
 
-    for (BOOL hRes = Process32FirstW(hSnapShot, &pEntry); hRes; hRes = Process32NextW(hSnapShot, &pEntry)) {
+    for (BOOL hRes = Process32FirstW(hSnapShot, &pEntry); hRes;
+         hRes = Process32NextW(hSnapShot, &pEntry)) {
         std::string pn = to_utf8(pEntry.szExeFile);
         std::transform(pn.begin(), pn.end(), pn.begin(), tolower);
         if (keepAliveApps.find(pn) != keepAliveApps.end()) {
