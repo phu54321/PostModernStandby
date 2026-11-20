@@ -13,6 +13,7 @@
 #include "utils/accessToken.h"
 #include "utils/getMonitorName.h"
 #include "utils/radio.h"
+#include "utils/autostart.h"
 #include "utils/nvidiaGpu.h"
 #include "preference.h"
 #include "res/resource.h"
@@ -23,6 +24,7 @@
 #define MENU_QUIT_MESSAGE 0x101
 #define MENU_PREF_EDIT_MESSAGE 0x102
 #define MENU_PREF_RELOAD_MESSAGE 0x103
+#define MENU_AUTOSTART_MESSAGE 0x104
 
 #define ID_MAIN_TIMER 0x301
 
@@ -49,6 +51,13 @@ void deleteTrayIcon(HWND hWnd) {
 }
 
 preference pref = read_pref();
+static HANDLE g_mutex = nullptr;
+
+// Enabling/disabling a device and restarting services needs administrator
+// rights, so the NVIDIA feature only runs when the process is elevated.
+static bool nvidiaManaged() {
+    return pref.reenable_nvidia_before_sleep && isElevated();
+}
 
 void load_and_normalize_pref() {
     pref = read_pref();
@@ -86,7 +95,37 @@ void load_and_normalize_pref() {
         }
     }
     save_pref(pref);
-    nvidiaGpuSetManaged(pref.reenable_nvidia_before_sleep);
+    nvidiaGpuSetManaged(nvidiaManaged());
+
+    // Keep the autostart task's run level in line with the preference.
+    if (isAutostartEnabled()) {
+        std::wstring error;
+        if (!setAutostart(true, pref.reenable_nvidia_before_sleep, error))
+            logA("Cannot update autostart task: %ls", error.c_str());
+    }
+}
+
+// If the preference needs administrator rights and this instance has none,
+// restarts the app elevated and closes this instance.
+void restartElevatedIfNeeded(HWND hWnd) {
+    if (!pref.reenable_nvidia_before_sleep || isElevated())
+        return;
+
+    // Release the single-instance mutex so the new instance can take it.
+    if (g_mutex) {
+        CloseHandle(g_mutex);
+        g_mutex = nullptr;
+    }
+    if (relaunchElevated()) {
+        DestroyWindow(hWnd);
+        return;
+    }
+    g_mutex = CreateMutex(nullptr, TRUE, TEXT("Global\\PostModernStandby"));
+    MessageBox(hWnd,
+               TEXT("Administrator rights are required for "
+                    "reenable_nvidia_before_sleep. The option stays inactive "
+                    "until the app is restarted as administrator."),
+               TEXT("PostModernStandby"), MB_OK | MB_ICONWARNING);
 }
 
 bool ProcessSuspendResumeNotification(HWND rhWnd, UINT msg, WPARAM wParam,
@@ -161,6 +200,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                        TEXT("Edit preference"));
             AppendMenu(hMenu, MF_STRING, MENU_PREF_RELOAD_MESSAGE,
                        TEXT("Reload preference"));
+            AppendMenu(hMenu,
+                       MF_STRING | (isAutostartEnabled() ? MF_CHECKED : MF_UNCHECKED),
+                       MENU_AUTOSTART_MESSAGE, TEXT("Start with Windows"));
             AppendMenu(hMenu, MF_STRING, MENU_QUIT_MESSAGE, TEXT("Quit"));
 
             auto hMenubar = CreateMenu();
@@ -190,6 +232,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             return 0;
         }
 
+        if (wmId == MENU_AUTOSTART_MESSAGE) {
+            std::wstring error;
+            if (!setAutostart(!isAutostartEnabled(),
+                              pref.reenable_nvidia_before_sleep, error)) {
+                MessageBoxW(hWnd, error.c_str(), L"PostModernStandby Error",
+                            MB_OK | MB_ICONWARNING);
+            }
+            return 0;
+        }
+
         if (wmId == MENU_PREF_EDIT_MESSAGE) {
             ShellExecute(hWnd, nullptr, getPrefFilePath().c_str(), nullptr,
                          nullptr, SW_SHOWNORMAL);
@@ -198,6 +250,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
         if (wmId == MENU_PREF_RELOAD_MESSAGE) {
             load_and_normalize_pref();
+            restartElevatedIfNeeded(hWnd);
             return 0;
         }
     } else if (msg == WM_TIMER) {
@@ -215,14 +268,26 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                      PSTR lpCmdLine, INT nCmdShow) {
     SetProcessDPIAware();
 
+    // Administrator rights are only needed for reenable_nvidia_before_sleep.
+    // Restart elevated before taking the single-instance mutex.
+    if (pref.reenable_nvidia_before_sleep && !isElevated()) {
+        if (relaunchElevated())
+            return 0;
+        MessageBox(nullptr,
+                   TEXT("Administrator rights are required for "
+                        "reenable_nvidia_before_sleep. Continuing without "
+                        "it."),
+                   TEXT("PostModernStandby"), MB_OK | MB_ICONWARNING);
+    }
+
     if (!EnableNTPrivilege(SE_SHUTDOWN_NAME, SE_PRIVILEGE_ENABLED)) {
         MessageBox(nullptr, TEXT("No suspend permission."), TEXT("Error"),
                    MB_OK);
         return 2;
     }
 
-    auto mutex = CreateMutex(nullptr, TRUE, TEXT("Global\\PostModernStandby"));
-    if (!mutex || GetLastError()) {
+    g_mutex = CreateMutex(nullptr, TRUE, TEXT("Global\\PostModernStandby"));
+    if (!g_mutex || GetLastError()) {
         MessageBox(nullptr, TEXT("Another instance already running."),
                    TEXT("Error"), MB_OK);
         return 0;
@@ -233,7 +298,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     // Recover a snapshot left behind by a crash or unexpected shutdown.
     failsafeRestoreRadioState();
-    nvidiaGpuStart(pref.reenable_nvidia_before_sleep);
+    nvidiaGpuStart(nvidiaManaged());
 
     WM_TASKBARCREATED = RegisterWindowMessageW(L"TaskbarCreated");
 

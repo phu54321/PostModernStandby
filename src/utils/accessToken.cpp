@@ -1,5 +1,7 @@
 #include "accessToken.h"
 
+#include <shellapi.h>
+
 // Code from https://m.blog.naver.com/stop2y/221130663783
 
 DWORD EnableNTPrivilege(LPCTSTR szPrivilege, DWORD dwState) {
@@ -26,4 +28,31 @@ DWORD EnableNTPrivilege(LPCTSTR szPrivilege, DWORD dwState) {
     }
 
     return dwRtn;
+}
+
+bool isElevated() {
+    HANDLE token;
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token))
+        return false;
+    TOKEN_ELEVATION elevation = {};
+    DWORD size = 0;
+    bool elevated = GetTokenInformation(token, TokenElevation, &elevation,
+                                        sizeof(elevation), &size) &&
+                    elevation.TokenIsElevated;
+    CloseHandle(token);
+    return elevated;
+}
+
+bool relaunchElevated() {
+    wchar_t path[MAX_PATH];
+    DWORD len = GetModuleFileNameW(nullptr, path, MAX_PATH);
+    if (len == 0 || len >= MAX_PATH)
+        return false;
+
+    SHELLEXECUTEINFOW sei = {};
+    sei.cbSize = sizeof(sei);
+    sei.lpVerb = L"runas";
+    sei.lpFile = path;
+    sei.nShow = SW_SHOWNORMAL;
+    return ShellExecuteExW(&sei) != FALSE;
 }

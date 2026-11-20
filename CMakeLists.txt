@@ -12,11 +12,12 @@ add_executable(PostModernStandby WIN32
 		src/utils/accessToken.cpp
 		src/utils/radio.cpp
 		src/utils/nvidiaGpu.cpp
+		src/utils/autostart.cpp
 		src/utils/debugLog.cpp
 		src/utils/getMonitorName.cpp
 		src/utils/volumeRAII.cpp
 		src/utils/WASAPIUtils.cpp
 		src/timerLoop.cpp)
 
-target_link_libraries(PostModernStandby powrprof winmm runtimeobject cfgmgr32 setupapi)
+target_link_libraries(PostModernStandby powrprof winmm runtimeobject cfgmgr32 setupapi taskschd secur32 ole32 oleaut32)
 set_property(TARGET PostModernStandby PROPERTY CXX_STANDARD 17)
