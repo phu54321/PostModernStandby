@@ -11,6 +11,7 @@ add_executable(PostModernStandby WIN32
 
 		src/utils/accessToken.cpp
 		src/utils/radio.cpp
+		src/utils/nvidiaGpu.cpp
 		src/utils/debugLog.cpp
 		src/utils/getMonitorName.cpp
 		src/utils/volumeRAII.cpp

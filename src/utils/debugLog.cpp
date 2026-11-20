@@ -36,10 +36,14 @@ void logA(const char *format, ...) {
 
     auto logPath = getLogPath();
     if (std::filesystem::exists(logPath)) {
-        auto t = std::time(nullptr);
-        auto tm = *std::localtime(&t);
+        // Millisecond resolution: power transitions are timing sensitive.
+        SYSTEMTIME st;
+        GetLocalTime(&st);
+        char stamp[40];
+        snprintf(stamp, sizeof(stamp), "[%02d-%02d-%04d %02d-%02d-%02d.%03d] ",
+                 st.wDay, st.wMonth, st.wYear, st.wHour, st.wMinute,
+                 st.wSecond, st.wMilliseconds);
         std::fstream of(logPath, std::ios_base::app);
-        of << std::put_time(&tm, "[%d-%m-%Y %H-%M-%S] ") << (buf + logPrefixLen)
-           << std::endl;
+        of << stamp << (buf + logPrefixLen) << std::endl;
     }
 }

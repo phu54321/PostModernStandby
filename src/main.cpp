@@ -13,6 +13,7 @@
 #include "utils/accessToken.h"
 #include "utils/getMonitorName.h"
 #include "utils/radio.h"
+#include "utils/nvidiaGpu.h"
 #include "preference.h"
 #include "res/resource.h"
 #include "timerLoop.h"
@@ -85,6 +86,7 @@ void load_and_normalize_pref() {
         }
     }
     save_pref(pref);
+    nvidiaGpuSetManaged(pref.reenable_nvidia_before_sleep);
 }
 
 bool ProcessSuspendResumeNotification(HWND rhWnd, UINT msg, WPARAM wParam,
@@ -92,6 +94,7 @@ bool ProcessSuspendResumeNotification(HWND rhWnd, UINT msg, WPARAM wParam,
     if (msg == WM_POWERBROADCAST) {
         switch (wParam) {
         case PBT_APMSUSPEND: {
+            logA("[PBT_APMSUSPEND]");
             if (pref.disable_bluetooth_on_sleep) {
                 logA("[PBT_APMSUSPEND] Turning bluetooth OFF...");
                 turnOffRadio();
@@ -99,7 +102,12 @@ bool ProcessSuspendResumeNotification(HWND rhWnd, UINT msg, WPARAM wParam,
             return true;
         }
 
+        case PBT_APMRESUMEAUTOMATIC:
+            logA("[PBT_APMRESUMEAUTOMATIC]");
+            return false;
+
         case PBT_APMRESUMESUSPEND: {
+            logA("[PBT_APMRESUMESUSPEND]");
             if (isRadioTurnedOffByApp()) {
                 logA("[PBT_APMRESUMESUSPEND] Resuming bluetooth...");
                 resumeRadio();
@@ -108,6 +116,7 @@ bool ProcessSuspendResumeNotification(HWND rhWnd, UINT msg, WPARAM wParam,
         }
 
         case PBT_APMRESUMECRITICAL: {
+            logA("[PBT_APMRESUMECRITICAL]");
             if (isRadioTurnedOffByApp()) {
                 logA("[PBT_APMRESUMECRITICAL] Resuming bluetooth...");
                 resumeRadio();
@@ -140,6 +149,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         SetTimer(hWnd, ID_MAIN_TIMER, 5000, nullptr);
         return 0;
     } else if (msg == WM_DESTROY) {
+        nvidiaGpuShutdown();
         resumeRadio();
         deleteTrayIcon(hWnd);
         PostQuitMessage(0);
@@ -223,6 +233,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     // Recover a snapshot left behind by a crash or unexpected shutdown.
     failsafeRestoreRadioState();
+    nvidiaGpuStart(pref.reenable_nvidia_before_sleep);
 
     WM_TASKBARCREATED = RegisterWindowMessageW(L"TaskbarCreated");
 

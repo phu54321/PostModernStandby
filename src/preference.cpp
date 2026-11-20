@@ -56,6 +56,7 @@ preference read_pref() {
         json_get_pref_optional(lid_close_alert_volume);
         json_get_pref_optional(main_monitor_name);
         json_get_pref_optional(disable_bluetooth_on_sleep);
+        json_get_pref_optional(reenable_nvidia_before_sleep);
         logA("Loaded preference: %s", dump_pref(pref).dump(2).c_str());
         return pref;
     } catch (json::exception e) {
@@ -73,6 +74,7 @@ json dump_pref(const preference &props) {
         {"lid_close_alert_volume", props.lid_close_alert_volume},
         {"lid_close_sleep_delay_time", props.lid_close_sleep_delay_time},
         {"main_monitor_name", props.main_monitor_name},
+        {"reenable_nvidia_before_sleep", props.reenable_nvidia_before_sleep},
         {"sleep_preventing_apps", props.sleep_preventing_apps},
     };
 }

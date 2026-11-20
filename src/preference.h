@@ -17,6 +17,8 @@ struct preference {
     bool allow_clamshell_on_battery = false;
     int lid_close_alert_volume = 100;
     bool disable_bluetooth_on_sleep = false;
+    // Enable a disabled NVIDIA dGPU before sleep, disable it again on wake.
+    bool reenable_nvidia_before_sleep = false;
     std::set<std::string> sleep_preventing_apps = {
         "caffeine.exe", "caffeine32.exe", "caffeine64.exe"};
     std::string main_monitor_name = getMonitorNameIfOnlyOne();

@@ -10,6 +10,7 @@
 #include "utils/volumeRAII.h"
 #include "utils/getMonitorName.h"
 #include "utils/radio.h"
+#include "utils/nvidiaGpu.h"
 #include "preference.h"
 #include "lidClose.h"
 #include "keepAliveApp.hpp"
@@ -47,6 +48,9 @@ bool checkClamshell(bool isLidClosedNow, const preference &pref) {
 }
 
 double currentTime() { return GetTickCount64() / 1000.0; }
+
+// Longest the sleep waits for the dGPU enable past the sleep delay.
+static constexpr double kMaxGpuWaitSec = 30;
 
 void sleepNow(const preference &pref, HWND hWnd) {
     if (checkUsingS0ix()) {
@@ -110,6 +114,7 @@ void timerLoop(HWND hWnd, preference &pref) {
                 if (shouldSleepNowLazy.get()) {
                     logA("Transition: ACTIVE -> SLEEPPENDING (shouldSleepNow)");
                     state = State::SLEEPPENDING;
+                    nvidiaGpuSetSleepIntent(true);
                     sleepInitiateTime = now + pref.lid_close_sleep_delay_time;
                 } else {
                     logA("Transition: ACTIVE -> LIDCLOSEDACTIVE "
@@ -125,6 +130,15 @@ void timerLoop(HWND hWnd, preference &pref) {
             // Wait for 30 seconds before sleeping
             if (shouldSleepNowLazy.get()) {
                 if (now >= sleepInitiateTime) {
+                    // The dGPU must be enabled before the display turns off.
+                    if (!nvidiaGpuIsReadyForSleep()) {
+                        if (now < sleepInitiateTime + kMaxGpuWaitSec) {
+                            logA("[SLEEPPENDING] waiting for dGPU enable");
+                            return;
+                        }
+                        logA("[SLEEPPENDING] dGPU enable timed out, sleeping "
+                             "anyway");
+                    }
                     logA("Transition: SLEEPPENDING -> SLEEP (time elapsed) - "
                          "now sleeping...");
                     sleepInitiateTime = now + 300;
@@ -137,11 +151,13 @@ void timerLoop(HWND hWnd, preference &pref) {
                 if (isLidClosedNow) {
                     logA("Transition: SLEEPPENDING -> LIDCLOSEDACTIVE");
                     state = State::LIDCLOSEDACTIVE;
+                    nvidiaGpuSetSleepIntent(false);
                     lidCloseAlarmTime = now;
                     break;
                 } else {
                     logA("Transition: SLEEPPENDING -> ACTIVE");
                     state = State::ACTIVE;
+                    nvidiaGpuSetSleepIntent(false);
                     break;
                 }
             }
@@ -188,11 +204,13 @@ void timerLoop(HWND hWnd, preference &pref) {
                     }
                     state = State::LIDCLOSEDACTIVE;
                     lidCloseAlarmTime = now;
+                    nvidiaGpuSetSleepIntent(false);
                     break;
                 } else {
                     logA("Transition: SLEEP -> ACTIVE");
                     resumeRadio();
                     state = State::ACTIVE;
+                    nvidiaGpuSetSleepIntent(false);
                     break;
                 }
             }
@@ -205,6 +223,7 @@ void timerLoop(HWND hWnd, preference &pref) {
                 logA("Transition: LIDCLOSEDACTIVE -> SLEEPPENDING");
                 volumeRAII = nullptr;
                 state = State::SLEEPPENDING;
+                nvidiaGpuSetSleepIntent(true);
                 sleepInitiateTime = now + 10;
                 break;
             } else if (!isLidClosedNow) {
